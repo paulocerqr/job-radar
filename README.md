@@ -61,7 +61,7 @@ job-radar provider testar groq
 job-radar perfil curriculo curriculo.md
 ```
 
-Os presets trazem modelo e limites iniciais; confira no painel de cada provider e ajuste com `--modelo`, `--rpm` e `--rpd`. O worker audita um lote por usuário a cada minuto; `job-radar auditar` roda uma rodada na hora.
+Os presets trazem modelo e limites iniciais. Modelos são aposentados com frequência: se o `testar` falhar com 404/410, liste os disponíveis com `job-radar provider modelos <nome>` e troque com `job-radar provider editar <nome> --modelo ...`. O worker audita um lote por usuário a cada minuto; `job-radar auditar` roda uma rodada na hora.
 
 > O preset `codex` usa o Codex CLI autenticado na máquina, em modo somente leitura, sem salvar sessão e numa pasta temporária vazia. Não funciona dentro do container: use-o rodando `job-radar worker` no host.
 
