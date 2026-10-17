@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     admin_nome: str = "Admin"
     admin_senha: SecretStr | None = None
 
+    # opcional: aumenta o rate limit da API do GitHub (60 → 5000 req/h)
+    github_token: SecretStr | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

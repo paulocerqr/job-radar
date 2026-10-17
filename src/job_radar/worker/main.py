@@ -7,9 +7,12 @@ import logging
 import signal
 import time
 from datetime import UTC, datetime
+from datetime import time as Hora
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.blocking import BlockingScheduler
+from sqlalchemy import select
 
 from job_radar.config import Settings
 
@@ -30,11 +33,50 @@ def heartbeat_recente(caminho: Path, max_idade_s: int) -> bool:
     return time.time() - modificado_em <= max_idade_s
 
 
+def dentro_da_janela(agora: Hora, inicio: Hora, fim: Hora) -> bool:
+    return inicio <= agora <= fim
+
+
+def job_coletar(fonte_id: str, settings: Settings) -> None:
+    from job_radar.coleta.execucao import executar_coleta
+    from job_radar.db import nova_sessao
+
+    agora = datetime.now(ZoneInfo(settings.tz)).time()
+    if not dentro_da_janela(agora, settings.coleta_inicio, settings.coleta_fim):
+        log.debug("fora da janela de coleta", extra={"fonte": fonte_id})
+        return
+    with nova_sessao() as sessao:
+        executar_coleta(sessao, fonte_id)
+
+
 def registrar_jobs(scheduler: BlockingScheduler, settings: Settings) -> None:
-    if settings.coleta_no_worker:
-        log.info("coleta agendada no worker; nenhum coletor registrado ainda")
-    else:
+    if not settings.coleta_no_worker:
         log.info("coleta externa ao worker (CronJob)")
+        return
+
+    from job_radar.coleta.base import fontes_registradas
+    from job_radar.db import nova_sessao
+    from job_radar.models import Fonte
+
+    with nova_sessao() as sessao:
+        fontes = sessao.scalars(select(Fonte).where(Fonte.ativa)).all()
+    disponiveis = fontes_registradas()
+    for fonte in fontes:
+        if fonte.id not in disponiveis:
+            log.warning("fonte ativa sem coletor implementado", extra={"fonte": fonte.id})
+            continue
+        # RN01: intervalo próprio por fonte; a janela 08-20h é checada dentro do job
+        scheduler.add_job(
+            job_coletar,
+            "interval",
+            minutes=fonte.intervalo_min,
+            args=[fonte.id, settings],
+            id=f"coletar:{fonte.id}",
+            next_run_time=datetime.now(UTC),
+            max_instances=1,
+            coalesce=True,
+        )
+        log.info("coleta agendada", extra={"fonte": fonte.id, "intervalo_min": fonte.intervalo_min})
 
 
 def executar(settings: Settings) -> None:

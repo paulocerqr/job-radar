@@ -1,0 +1,121 @@
+[
+ {
+  "number": 12472,
+  "title": "[Remoto] Full Stack Developer Pleno - Rotha IA",
+  "html_url": "https://github.com/backend-br/vagas/issues/12472",
+  "created_at": "2026-10-17T18:46:04Z",
+  "updated_at": "2026-10-17T18:46:20Z",
+  "body": "## Nossa empresa\n\nA Rotha IA cria sistemas de gestão sob medida (CRMs e ERPs) para empresas de diferentes setores, com React, TypeScript e Supabase.\n\n## Descrição da vaga\n\nProfissional para desenvolver, evoluir e sustentar de ponta a ponta os sistemas de gestão web dos nossos clientes, com autonomia para decidir como resolver cada problema.\n\n- Desenvolver e evoluir aplicações com React, TypeScript e Next.js, do front-end ao banco de dados.\n- Modelar o banco no Supabase (PostgreSQL): tabelas, RLS, funções, gatilhos e migrations sem derrubar a produção.\n- Projetar integrações com serviços extern",
+  "labels": [
+   {
+    "name": "PJ"
+   },
+   {
+    "name": "Pleno"
+   },
+   {
+    "name": "Júnior"
+   },
+   {
+    "name": "Remoto"
+   },
+   {
+    "name": "Testes automatizados"
+   },
+   {
+    "name": "TypeScript"
+   },
+   {
+    "name": "PostgreSQL"
+   },
+   {
+    "name": "Git"
+   }
+  ],
+  "state": "open"
+ },
+ {
+  "number": 12471,
+  "title": "[Remoto] Full Stack Developer Júnior - Rotha IA",
+  "html_url": "https://github.com/backend-br/vagas/issues/12471",
+  "created_at": "2026-10-17T18:46:03Z",
+  "updated_at": "2026-10-17T18:46:19Z",
+  "body": "## Nossa empresa\n\nA Rotha IA cria sistemas de gestão sob medida (CRMs e ERPs) para empresas de diferentes setores, com React, TypeScript e Supabase.\n\n## Descrição da vaga\n\nBuscamos um perfil júnior avançado para desenvolver, manter e evoluir os sistemas de gestão web dos nossos clientes, atuando no front-end, no back-end e no banco de dados.\n\n- Desenvolver e manter aplicações web com React e TypeScript.\n- Implementar regras de negócio, funções e serviços no Supabase (PostgreSQL e Edge Functions).\n- Criar e consumir APIs REST e integrar os sistemas com serviços externos (nota fiscal, WhatsApp, ",
+  "labels": [
+   {
+    "name": "PJ"
+   },
+   {
+    "name": "Júnior"
+   },
+   {
+    "name": "Remoto"
+   },
+   {
+    "name": "Testes automatizados"
+   },
+   {
+    "name": "TypeScript"
+   },
+   {
+    "name": "PostgreSQL"
+   },
+   {
+    "name": "SQL"
+   },
+   {
+    "name": "Git"
+   }
+  ],
+  "state": "open"
+ },
+ {
+  "number": 12470,
+  "title": "[Remoto] Engenheiro (a) de Software-Github /Micro 1",
+  "html_url": "https://github.com/backend-br/vagas/issues/12470",
+  "created_at": "2026-10-15T14:33:24Z",
+  "updated_at": "2026-10-15T14:34:10Z",
+  "body": "🌎 VAGA INTERNACIONAL | ENGENHEIRO(A) DE SOFTWARE | GITHUB\n\n💰 US$ 50 a US$ 100 por hora!\n\nVocê trabalha com desenvolvimento de software e domina linguagens como Python, Java ou Rust? Esta oportunidade internacional pode ser o próximo passo da sua carreira!\n\nUma vaga para profissionais de tecnologia interessados em desafios de engenharia de software e no ecossistema de desenvolvimento colaborativo.\n\nHabilidades necessárias:\n\n- Python 3\n- Java\n- Rust\n- +9 habilidades adicionais descritas no anúncio oficial\n\n🌍 Oportunidade internacional: consulte os critérios de elegibilidade para o seu país diret",
+  "labels": [
+   {
+    "name": "Python"
+   },
+   {
+    "name": "Java"
+   },
+   {
+    "name": "Remoto"
+   }
+  ],
+  "state": "open"
+ },
+ {
+  "number": 12427,
+  "title": "[Híbrido -SP] Back-end developer Cobol Boleto e Cobrança - Evertec",
+  "html_url": "https://github.com/backend-br/vagas/issues/12427",
+  "created_at": "2026-09-15T20:26:03Z",
+  "updated_at": "2026-10-16T03:01:06Z",
+  "body": "### Nossa empresa\nMuito prazer, Somos a Evertec!\n\nA Evertec é uma empresa especializada em tecnologia para o setor financeiro, com mais de 27 anos de atuação e presença em 26 países da América Latina e Caribe. Com mais de 11 bilhões de transações processadas anualmente, somos referência em soluções que impulsionam a transformação digital do mercado.\n\nOferecemos um portfólio completo de soluções em software, atendendo instituições financeiras, empresas e fintechs que buscam inovação, segurança e eficiência.\n\nNosso compromisso é com a excelência tecnológica, a inclusão financeira e a geração de ",
+  "labels": [
+   {
+    "name": "CLT"
+   },
+   {
+    "name": "Sênior"
+   },
+   {
+    "name": "Presencial"
+   },
+   {
+    "name": "Stale"
+   },
+   {
+    "name": "Híbrido"
+   },
+   {
+    "name": "Contrato"
+   }
+  ],
+  "state": "open"
+ }
+]

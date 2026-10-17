@@ -20,9 +20,12 @@ FONTES_PADRAO = [
         "nome": "Gupy",
         "ativa": True,
         "intervalo_min": 60,
-        "max_itens_execucao": 50,
+        "max_itens_execucao": 200,
         "confiabilidade": 80,
-        "config": {},
+        "config": {
+            "termos": ["ti", "tecnologia", "desenvolvimento", "infraestrutura", "software"],
+            "tipos": ["vacancy_type_internship"],
+        },
     },
     {
         "id": "github_backendbr",
@@ -59,10 +62,13 @@ PERFIL_ADMIN_PADRAO = {
         "kubernetes", "docker", "linux", "terraform",
         "backend", "back-end", "fullstack", "full stack", "full-stack",
         "python", "django", "fastapi", "node", "java", "golang",
+        # amplos: títulos de estágio raramente citam a stack (a IA refina)
+        "ti", "tecnologia da informacao", "tecnologia", "software", "sistemas",
+        "desenvolvimento de software", "programacao", "redes",
     ],
     "palavras_excluidas": [
         "senior", "sênior", "pleno", "especialista", "lead", "coordenador",
-        "gerente", "staff", "principal",
+        "gerente", "staff", "principal", "manager", "head", "diretor", "director",
     ],
     "niveis": [Nivel.ESTAGIO.value],
     "aceita_remoto": True,

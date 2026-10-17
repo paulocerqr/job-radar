@@ -1,29 +1,11 @@
 """Requer Postgres: defina TEST_DATABASE_URL (o CI define; localmente use o compose)."""
 
-import os
-
-import pytest
-from alembic import command
 from sqlalchemy import inspect, select
 
 from job_radar.config import get_settings
-from job_radar.db import alembic_config, get_engine, nova_sessao
+from job_radar.db import get_engine, nova_sessao
 from job_radar.models import Base, Usuario
 from job_radar.seed import FONTES_PADRAO, executar_seed
-
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("TEST_DATABASE_URL"), reason="TEST_DATABASE_URL não definido"
-)
-
-
-@pytest.fixture
-def banco_migrado():
-    cfg = alembic_config()
-    command.downgrade(cfg, "base")
-    command.upgrade(cfg, "head")
-    yield
-    get_engine().dispose()
-    command.downgrade(cfg, "base")
 
 
 def test_migracao_cria_todas_as_tabelas(banco_migrado):
