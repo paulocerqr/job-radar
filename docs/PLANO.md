@@ -478,8 +478,7 @@ job-radar/
 ├── pyproject.toml
 ├── alembic.ini
 ├── .env.example
-├── migrations/                     # Alembic
-│   └── versions/
+│                                   # migrations ficam em src/job_radar/migrations (vão na imagem)
 ├── src/job_radar/
 │   ├── __init__.py
 │   ├── cli.py                      # Typer: api, worker, migrar, coletar, seed
@@ -628,13 +627,13 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 ### Fase 0 — Fundação (meta: 23/10/2026)
 
 > Datas alinhadas ao cronograma do lab Kubernetes (`docs/K8S-LAB.md` §7). Com 3–4 h/dia divididas com a trilha de infra.
-- [ ] `pyproject.toml`, ruff, pytest, docker-compose (`api`, `worker`, `postgres`).
-- [ ] Config (`pydantic-settings`), `.env.example`, logging JSON.
-- [ ] CLI Typer (`api`, `worker`, `migrar`, `seed`, `coletar`).
-- [ ] Dockerfile multi-stage não-root; `/healthz` e `/readyz`.
-- [ ] GitHub Actions: lint + testes + push da imagem no GHCR.
-- [ ] Models + migration inicial (schema da seção 6).
-- [ ] Seed: usuário admin, perfil (Brasília-DF, estágio, palavras-chave), fontes.
+- [x] `pyproject.toml` (uv), ruff, pytest, docker-compose (`postgres`, `migrar`, `api`, `worker`).
+- [x] Config (`pydantic-settings`), `.env.example`, logging JSON.
+- [x] CLI Typer (`api`, `worker`, `worker-saude`, `migrar`, `seed`, `coletar`).
+- [x] Dockerfile multi-stage não-root; `/healthz` e `/readyz`; heartbeat do worker.
+- [x] GitHub Actions: lint + testes (com Postgres) + push da imagem no GHCR. *(validar na primeira execução no GitHub)*
+- [x] Models + migration inicial (schema da seção 6, com `pg_trgm`).
+- [x] Seed idempotente: usuário admin, perfil (Brasília-DF, estágio, palavras-chave), fontes.
 
 ### Fase 1 — MVP (usuário único) (meta: 30/10/2026)
 - [ ] Interface `Coletor` + coletores Gupy e GitHub (com fixtures e testes).
