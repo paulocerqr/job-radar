@@ -1,0 +1,66 @@
+# Deploy local (servidor doméstico). No Kubernetes, ver docs/K8S-LAB.md.
+x-app: &app
+  image: ghcr.io/paulocerqr/job-radar:${JOB_RADAR_TAG:-local}
+  build: .
+  env_file: .env
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?defina no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina no .env}
+      POSTGRES_DB: ${POSTGRES_DB:?defina no .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORTA:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrar:
+    <<: *app
+    command: ["migrar"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    command: ["api"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrar:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    stop_grace_period: 60s
+    depends_on:
+      migrar:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "job-radar", "worker-saude"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pgdata:

@@ -1,0 +1,48 @@
+[project]
+name = "job-radar"
+version = "0.1.0"
+description = "Busca, auditoria por IA e recomendação de vagas de emprego/estágio"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.14",
+    "apscheduler>=3.11,<4",
+    "argon2-cffi>=23.1",
+    "fastapi>=0.115",
+    "psycopg[binary]>=3.2",
+    "pydantic-settings>=2.6",
+    "sqlalchemy>=2.0.36",
+    "typer>=0.15",
+    "uvicorn>=0.32",
+]
+
+[project.scripts]
+job-radar = "job_radar.cli:app"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/job_radar"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff.lint.per-file-ignores]
+"src/job_radar/migrations/versions/*" = ["E501"]
