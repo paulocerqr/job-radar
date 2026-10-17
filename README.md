@@ -34,8 +34,37 @@ Uma única imagem, com comandos diferentes:
 | `job-radar coletar <fonte>` | Executa uma coleta e sai (CronJob no Kubernetes) |
 | `job-radar alimentar` | Move as melhores vagas do pool para a fila |
 | `job-radar expirar` | Expira vagas além do TTL |
+| `job-radar auditar` | Uma rodada de auditoria por IA |
+| `job-radar provider ...` | Cadastra, lista, testa e remove providers de IA |
+| `job-radar perfil ...` | Mostra o perfil e define o currículo |
+| `job-radar chave-fernet` | Gera uma `FERNET_KEY` |
 
 Toda a configuração vem de variáveis de ambiente (ver `.env.example`).
+
+## Configurando a auditoria por IA
+
+```bash
+# 1. chave que cifra as API keys no banco (coloque no .env como FERNET_KEY)
+docker compose run --rm api chave-fernet
+
+# 2. providers, em ordem de prioridade (a chave vem de uma variável de ambiente,
+#    para não ficar no histórico do shell; sem --api-key-env ela é pedida no terminal)
+export GROQ_API_KEY=...
+job-radar provider adicionar groq --preset groq --api-key-env GROQ_API_KEY
+job-radar provider adicionar nvidia --preset nvidia --api-key-env NVIDIA_API_KEY
+job-radar provider adicionar gemini --preset gemini --api-key-env GEMINI_API_KEY
+job-radar provider adicionar codex --preset codex     # CLI local, só para o admin
+
+job-radar provider listar
+job-radar provider testar groq
+
+# 3. currículo usado para comparar requisitos
+job-radar perfil curriculo curriculo.md
+```
+
+Os presets trazem modelo e limites iniciais; confira no painel de cada provider e ajuste com `--modelo`, `--rpm` e `--rpd`. O worker audita um lote por usuário a cada minuto; `job-radar auditar` roda uma rodada na hora.
+
+> O preset `codex` usa o Codex CLI autenticado na máquina, em modo somente leitura, sem salvar sessão e numa pasta temporária vazia. Não funciona dentro do container: use-o rodando `job-radar worker` no host.
 
 ## Desenvolvimento
 

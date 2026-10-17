@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # opcional: aumenta o rate limit da API do GitHub (60 → 5000 req/h)
     github_token: SecretStr | None = None
 
+    # cifra as chaves de API dos providers no banco (gere com `job-radar chave-fernet`)
+    fernet_key: SecretStr | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
