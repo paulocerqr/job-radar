@@ -32,3 +32,7 @@ def configurar_logs(formato: str, nivel: str) -> None:
     raiz.handlers.clear()
     raiz.addHandler(handler)
     raiz.setLevel(nivel.upper())
+    # o httpx loga a URL de cada requisição em INFO; na API do Telegram o token do bot
+    # faz parte da URL (/bot<TOKEN>/...), então esses logs nunca podem ir para a saída
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)

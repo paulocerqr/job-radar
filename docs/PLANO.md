@@ -205,15 +205,15 @@ Toda transição gera registro em `historico_status`.
 
 **Recomendadas**
 - RN23: TTL de **14 dias**; após isso → `expirada`.
-- RN24: Expirador verifica diariamente se a URL da vaga ainda responde/está aberta (quando a fonte permitir) → senão `expirada`.
-- RN25: Ao atingir **80%** do limite → alerta ao usuário.
+- RN24: Expirador verifica diariamente se a URL da vaga ainda responde/está aberta (quando a fonte permitir) → senão `expirada`. *(pendente: depende de checagem por fonte; o TTL de 14 dias cobre o caso por enquanto)*
+- RN25: Ao atingir **80%** do limite → alerta ao usuário (uma vez, na rodada de envio que cruza o limiar).
 
 **Usuário**
 - RN26: Confirmar/ignorar disponível via Telegram (botões inline) e Web. Ignorar pede motivo opcional (botões rápidos: "nível", "stack", "local", "empresa", "outro").
 - RN27: O sistema **nunca** se candidata automaticamente.
 
 **Notificação**
-- RN28: Cada nova `recomendada` → POST no webhook n8n (evento `vaga.recomendada`).
+- RN28: Cada nova `recomendada` → mensagem no Telegram com botões ✅ Vou aplicar / ❌ Ignorar / 🔗 Abrir vaga. `vaga_usuario.notificado_em` só é preenchido após o Telegram confirmar o envio (falhas são reenviadas na rodada seguinte). Ignorar oferece motivos rápidos (nível, stack, local, empresa, outro). Ver D19.
 - RN29: Resumo diário às **20:30** (evento `resumo.diario`): novas recomendadas, pendentes, capacidade.
 
 ---
@@ -605,6 +605,8 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 | D16 | `worker` sempre com 1 réplica | Múltiplas réplicas | APScheduler duplicaria jobs; escala horizontal fica na `api`. |
 | D17 | Coleta exposta como comando CLI (`job-radar coletar <fonte>`) | Só via APScheduler | Permite CronJob no Kubernetes e execução manual/debug. |
 | D18 | No cluster, apenas providers de API | CLI dentro do container | Autenticar Claude/Codex em container expõe a assinatura e é frágil. |
+| D19 | **Telegram direto no Job Radar** (envio + botões por long polling no worker); n8n opcional, para outros canais no futuro | Telegram via n8n (D01 original) | Via n8n, os cliques precisariam voltar à API do Job Radar, exigindo que ela seja acessível pela rede do n8n (PC, cluster e EC2 têm redes diferentes). Long polling não precisa de URL pública e funciona igual em todos os ambientes; é testável sem o n8n. Revisa D01 para o Telegram. |
+| D20 | Calibração de 17/10: `score_minimo` 70 → 60; penalidade 25 para nível desconhecido em perfis só de estágio/trainee; score de pré-filtro ≥ 50 para entrar na fila | Manter 70 / penalidade 10 | Auditoria real: 3 estágios compatíveis (63–68) descartados só pelo corte; 13 de 17 chamadas de IA gastas com vagas sênior sem nível informado. |
 
 ---
 
@@ -644,8 +646,9 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 - [x] Providers `cli` e `openai_compatible`; auditor com lote, validação, fallback e backoff.
 - [x] Prompt v1 de auditoria. *(pendente: avaliação manual com ~20 vagas reais usando Groq/NVIDIA/Gemini/Codex)*
 - [x] Cadastro de providers (`job-radar provider ...`, presets groq/nvidia/gemini/codex) e currículo (`job-radar perfil curriculo`).
-- [ ] Webhook n8n + fluxo Telegram com botões confirmar/ignorar.
-- [ ] Worker com todos os jobs.
+- [x] Telegram com botões confirmar/ignorar e motivo (D19), vínculo por link `/start`, alerta de capacidade e resumo diário.
+- [x] Worker com todos os jobs (coleta, alimentador, auditor, expirador, notificação, resumo, polling).
+- [ ] Verificação de vaga fora do ar (RN24).
 
 **Critério de pronto:** às 08:00 o sistema coleta, e ao longo do dia recomendadas chegam no Telegram; confirmar/ignorar pelo Telegram altera o estado.
 

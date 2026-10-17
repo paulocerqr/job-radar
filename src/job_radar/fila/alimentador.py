@@ -12,6 +12,9 @@ from job_radar.models.enums import OrigemTransicao, StatusVaga
 
 log = logging.getLogger(__name__)
 
+# Abaixo disso a vaga fica no pool: não vale uma chamada de IA (calibrado em 17/10)
+SCORE_MINIMO_FILA = 50
+
 
 def contar_por_status(sessao: Session, usuario: Usuario, status: StatusVaga) -> int:
     return sessao.scalar(
@@ -35,6 +38,7 @@ def alimentar_usuario(sessao: Session, usuario: Usuario, agora: datetime) -> int
         .where(
             VagaUsuario.usuario_id == usuario.id,
             VagaUsuario.status == StatusVaga.POOL,
+            VagaUsuario.score_prefiltro >= SCORE_MINIMO_FILA,
             or_(VagaUsuario.expira_em.is_(None), VagaUsuario.expira_em > agora),
         )
         .order_by(VagaUsuario.score_prefiltro.desc(), Vaga.publicada_em.desc().nulls_last())

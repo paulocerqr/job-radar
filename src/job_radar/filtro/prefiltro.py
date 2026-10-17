@@ -9,6 +9,10 @@ from job_radar.models.enums import Modalidade, Nivel
 from job_radar.texto import contem_termo, normalizar_chave
 
 PENALIDADE_DESCONHECIDO = 10
+# Quem busca só estágio/trainee quase nunca é o público de uma vaga sem nível informado
+# (na prática, vagas plenas/sênior que não dizem o nível). Calibrado na auditoria de 17/10.
+PENALIDADE_NIVEL_DESCONHECIDO_INICIANTE = 25
+_NIVEIS_INICIANTES = {Nivel.ESTAGIO, Nivel.TRAINEE}
 
 
 class VagaAvaliavel(Protocol):
@@ -77,7 +81,12 @@ def avaliar(
         return _reprovada("nenhuma palavra-chave do perfil")
 
     # RN11
-    penalidade = PENALIDADE_DESCONHECIDO if vaga.nivel == Nivel.DESCONHECIDO else 0
+    penalidade = 0
+    if vaga.nivel == Nivel.DESCONHECIDO:
+        so_iniciante = set(perfil.niveis) <= _NIVEIS_INICIANTES
+        penalidade = (
+            PENALIDADE_NIVEL_DESCONHECIDO_INICIANTE if so_iniciante else PENALIDADE_DESCONHECIDO
+        )
     if vaga.modalidade == Modalidade.REMOTO:
         if not perfil.aceita_remoto:
             return _reprovada("vaga remota e perfil não aceita remoto")

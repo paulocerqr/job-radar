@@ -51,7 +51,7 @@ class Perfil(ComAtualizadoEm, Base):
     aceita_remoto: Mapped[bool] = mapped_column(default=True, server_default="true")
     # [{"cidade": "Brasília", "uf": "DF"}]
     localidades: Mapped[list[dict]] = mapped_column(JSONB, default=list, server_default="[]")
-    score_minimo: Mapped[int] = mapped_column(default=70, server_default="70")
+    score_minimo: Mapped[int] = mapped_column(default=60, server_default="60")
     ttl_pool_dias: Mapped[int] = mapped_column(default=7, server_default="7")
     ttl_recomendada_dias: Mapped[int] = mapped_column(default=14, server_default="14")
 

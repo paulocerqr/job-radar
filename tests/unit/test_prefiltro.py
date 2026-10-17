@@ -52,11 +52,17 @@ def test_reprova_nivel_fora_do_perfil():
     assert not resultado.aprovada
 
 
-def test_nivel_desconhecido_passa_com_penalidade():
+def test_nivel_desconhecido_penaliza_mais_quem_busca_so_estagio():
     base = avaliar(Vaga(), Perfil(), 80, AGORA).score
     resultado = avaliar(Vaga(nivel=Nivel.DESCONHECIDO), Perfil(), 80, AGORA)
     assert resultado.aprovada
-    assert resultado.score == base - 10
+    assert resultado.score == base - 25
+
+
+def test_nivel_desconhecido_penalidade_normal_para_outros_niveis():
+    perfil = replace(Perfil(), niveis=[Nivel.ESTAGIO.value, Nivel.JUNIOR.value])
+    base = avaliar(Vaga(), perfil, 80, AGORA).score
+    assert avaliar(Vaga(nivel=Nivel.DESCONHECIDO), perfil, 80, AGORA).score == base - 10
 
 
 def test_reprova_sem_palavra_chave():

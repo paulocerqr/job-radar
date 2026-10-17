@@ -3,7 +3,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -39,6 +39,23 @@ class Settings(BaseSettings):
 
     # cifra as chaves de API dos providers no banco (gere com `job-radar chave-fernet`)
     fernet_key: SecretStr | None = None
+
+    # bot do Telegram (crie com o @BotFather); sem ele, as notificações ficam desligadas
+    telegram_bot_token: SecretStr | None = None
+    resumo_diario: time = time(20, 30)
+
+    @field_validator(
+        "admin_email",
+        "admin_senha",
+        "github_token",
+        "fernet_key",
+        "telegram_bot_token",
+        mode="before",
+    )
+    @classmethod
+    def _vazio_e_ausente(cls, valor: object) -> object:
+        """`CHAVE=` no .env (linha presente, sem valor) significa "não configurado"."""
+        return None if isinstance(valor, str) and not valor.strip() else valor
 
 
 @lru_cache
