@@ -4,6 +4,7 @@ Busca vagas de estágio/emprego em várias fontes, audita cada uma com IA de aco
 
 - Plano completo (requisitos, regras de negócio, schema, decisões): [`docs/PLANO.md`](docs/PLANO.md)
 - Deploy em Kubernetes (lab na GCP): [`docs/K8S-LAB.md`](docs/K8S-LAB.md)
+- CI/CD (GitHub Actions, GHCR, fluxo de PR): [`docs/CI-CD.md`](docs/CI-CD.md)
 
 **Status:** MVP (Fase 1) funcional: coleta (Gupy, GitHub), pré-filtro, fila, auditoria por IA (Codex, Groq, NVIDIA, Gemini) e notificações no Telegram. Próximo: Web UI (Fase 2).
 
