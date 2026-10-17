@@ -3,17 +3,27 @@
 import logging
 
 import typer
+from pydantic import ValidationError
 
+from job_radar.cli_config import perfil_app, provider_app
 from job_radar.config import get_settings
 from job_radar.logs import configurar_logs
 
 app = typer.Typer(help="Job Radar", no_args_is_help=True, add_completion=False)
 log = logging.getLogger("job_radar.cli")
 
+app.add_typer(provider_app, name="provider")
+app.add_typer(perfil_app, name="perfil")
+
 
 @app.callback()
 def _inicializar() -> None:
-    settings = get_settings()
+    try:
+        settings = get_settings()
+    except ValidationError:
+        # ex.: `--help` sem DATABASE_URL; comandos que usam o banco falham depois com o erro claro
+        configurar_logs("text", "INFO")
+        return
     configurar_logs(settings.log_format, settings.log_level)
 
 
@@ -99,6 +109,28 @@ def expirar() -> None:
 
     with nova_sessao() as sessao:
         log.info("expiração concluída", extra={"expiradas": expirar_vagas(sessao)})
+
+
+@app.command()
+def auditar() -> None:
+    """Uma rodada de auditoria: um lote por usuário (o worker faz isso a cada minuto)."""
+    from job_radar.auditoria.auditor import auditar as auditar_fila
+    from job_radar.db import nova_sessao
+
+    with nova_sessao() as sessao:
+        resumo = auditar_fila(sessao)
+    typer.echo(
+        f"recomendadas: {len(resumo.recomendadas)}, descartadas: {resumo.descartadas},"
+        f" erros: {resumo.erros}, adiadas: {resumo.adiadas}"
+    )
+
+
+@app.command("chave-fernet")
+def chave_fernet() -> None:
+    """Gera uma FERNET_KEY nova (cifra as chaves de API no banco). Guarde-a no .env."""
+    from job_radar.seguranca.cripto import gerar_chave
+
+    typer.echo(gerar_chave())
 
 
 @app.command()
