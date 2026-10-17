@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 
 import typer
+from dotenv import dotenv_values
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,11 @@ OpcaoUsuario = typer.Option(None, "--usuario", "-u", help="E-mail do usuário (p
 def _falhar(mensagem: str) -> typer.Exit:
     typer.secho(mensagem, fg=typer.colors.RED, err=True)
     return typer.Exit(1)
+
+
+def _ler_variavel(nome: str) -> str | None:
+    """Ambiente do shell primeiro; depois o .env (mesmo arquivo lido pelas Settings)."""
+    return os.environ.get(nome) or dotenv_values(".env").get(nome) or None
 
 
 def _usuario(sessao: Session, email: str | None) -> Usuario:
@@ -55,7 +61,7 @@ def adicionar(
     modelo: str | None = typer.Option(None),
     comando: str | None = typer.Option(None, help="Só para tipo cli; use {saida} p/ arquivo"),
     api_key_env: str | None = typer.Option(
-        None, help="Nome da variável de ambiente com a chave (evita a chave no histórico)"
+        None, help="Variável (ambiente ou .env) com a chave; evita a chave no histórico"
     ),
     prioridade: int | None = typer.Option(None, help="Menor = usado primeiro"),
     tamanho_lote: int | None = typer.Option(None),
@@ -100,9 +106,9 @@ def adicionar(
         if tipo_final == TipoProvider.OPENAI_COMPATIBLE:
             if not valores["base_url"]:
                 raise _falhar("informe --base-url (ou use um --preset)")
-            chave = os.environ.get(api_key_env) if api_key_env else None
+            chave = _ler_variavel(api_key_env) if api_key_env else None
             if api_key_env and not chave:
-                raise _falhar(f"variável de ambiente vazia: {api_key_env}")
+                raise _falhar(f"variável vazia no ambiente e no .env: {api_key_env}")
             chave = chave or typer.prompt("Chave de API", hide_input=True)
             chave_cifrada, sufixo = cifrar(chave), mascarar(chave)
 
