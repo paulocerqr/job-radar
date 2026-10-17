@@ -104,6 +104,20 @@ def test_openai_compativel_401_nao_e_transitorio():
     assert not erro.value.transitorio
 
 
+def test_openai_compativel_modelo_aposentado_nao_e_transitorio():
+    with pytest.raises(ErroProvider) as erro:
+        provider_com(lambda _: httpx.Response(410, text="end of life")).completar("s", "u")
+    assert not erro.value.transitorio
+
+
+def test_openai_compativel_lista_modelos():
+    def responder(request):
+        assert str(request.url) == "https://api.x/v1/models"
+        return httpx.Response(200, json={"data": [{"id": "b"}, {"id": "a"}]})
+
+    assert provider_com(responder).listar_modelos() == ["a", "b"]
+
+
 def test_openai_compativel_falha_de_rede():
     def responder(request):
         raise httpx.ConnectError("sem rede", request=request)

@@ -176,6 +176,68 @@ def testar(nome: str, usuario_email: str | None = OpcaoUsuario) -> None:
     typer.echo(f"ok em {segundos:.1f}s — modelo {resposta.modelo}, resposta {dados}")
 
 
+@provider_app.command("modelos")
+def modelos(
+    nome: str,
+    filtro: str | None = typer.Option(None, help="Só ids que contenham este texto"),
+    usuario_email: str | None = OpcaoUsuario,
+) -> None:
+    """Lista os modelos disponíveis para a chave cadastrada (endpoint /models)."""
+    from job_radar.auditoria.providers import ProviderOpenAICompativel, construir_provider
+    from job_radar.auditoria.providers.base import ErroProvider
+
+    with nova_sessao() as sessao:
+        config = _provider(sessao, _usuario(sessao, usuario_email), nome)
+        provider = construir_provider(config)
+        if not isinstance(provider, ProviderOpenAICompativel):
+            raise _falhar("só providers openai_compatible listam modelos")
+        try:
+            ids = provider.listar_modelos()
+        except ErroProvider as erro:
+            raise _falhar(f"falhou: {erro}") from None
+    for id_modelo in ids:
+        if not filtro or filtro.lower() in id_modelo.lower():
+            typer.echo(id_modelo)
+
+
+@provider_app.command("editar")
+def editar(
+    nome: str,
+    modelo: str | None = typer.Option(None),
+    prioridade: int | None = typer.Option(None),
+    tamanho_lote: int | None = typer.Option(None),
+    rpm: int | None = typer.Option(None),
+    rpd: int | None = typer.Option(None),
+    timeout_s: int | None = typer.Option(None),
+    ativo: bool | None = typer.Option(None, "--ativo/--inativo"),
+    usuario_email: str | None = OpcaoUsuario,
+) -> None:
+    """Altera campos de um provider sem recadastrar a chave."""
+    alteracoes = {
+        campo: valor
+        for campo, valor in {
+            "modelo": modelo,
+            "prioridade": prioridade,
+            "tamanho_lote": tamanho_lote,
+            "rpm": rpm,
+            "rpd": rpd,
+            "timeout_s": timeout_s,
+            "ativo": ativo,
+        }.items()
+        if valor is not None
+    }
+    if not alteracoes:
+        raise _falhar("nada para alterar")
+    with nova_sessao() as sessao:
+        config = _provider(sessao, _usuario(sessao, usuario_email), nome)
+        for campo, valor in alteracoes.items():
+            setattr(config, campo, valor)
+        config.ultimo_erro = None
+        config.ultimo_erro_em = None
+        sessao.commit()
+    typer.echo(f"provider {nome} atualizado: {alteracoes}")
+
+
 @provider_app.command("remover")
 def remover(nome: str, usuario_email: str | None = OpcaoUsuario) -> None:
     with nova_sessao() as sessao:
