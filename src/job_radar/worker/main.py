@@ -118,6 +118,56 @@ def registrar_coletas(scheduler: BlockingScheduler, settings: Settings) -> None:
         log.info("coleta agendada", extra={"fonte": fonte.id, "intervalo_min": fonte.intervalo_min})
 
 
+def job_notificar(cliente) -> None:
+    from job_radar.db import nova_sessao
+    from job_radar.notificacao.notificador import notificar
+
+    with nova_sessao() as sessao:
+        notificar(sessao, cliente)
+
+
+def job_resumo(cliente, settings: Settings) -> None:
+    from job_radar.db import nova_sessao
+    from job_radar.notificacao.notificador import enviar_resumos
+
+    with nova_sessao() as sessao:
+        enviar_resumos(sessao, cliente, settings.tz)
+
+
+def registrar_telegram(scheduler: BlockingScheduler, settings: Settings):
+    """Retorna o polling (para encerrar no shutdown) ou None se o bot não estiver configurado."""
+    if settings.telegram_bot_token is None:
+        log.info("TELEGRAM_BOT_TOKEN ausente: notificações desligadas")
+        return None
+
+    from job_radar.notificacao.bot import PollingTelegram
+    from job_radar.notificacao.telegram import ClienteTelegram
+
+    cliente = ClienteTelegram(settings.telegram_bot_token.get_secret_value())
+    scheduler.add_job(
+        job_notificar,
+        "interval",
+        minutes=1,
+        args=[cliente],
+        id="notificar",
+        next_run_time=datetime.now(UTC),
+        max_instances=1,
+        coalesce=True,
+    )
+    # RN29
+    scheduler.add_job(
+        job_resumo,
+        "cron",
+        hour=settings.resumo_diario.hour,
+        minute=settings.resumo_diario.minute,
+        args=[cliente, settings],
+        id="resumo_diario",
+    )
+    polling = PollingTelegram(cliente)
+    polling.iniciar()
+    return polling
+
+
 def executar(settings: Settings) -> None:
     scheduler = BlockingScheduler(timezone=settings.tz)
     scheduler.add_job(
@@ -129,9 +179,12 @@ def executar(settings: Settings) -> None:
         next_run_time=datetime.now(UTC),
     )
     registrar_jobs(scheduler, settings)
+    polling = registrar_telegram(scheduler, settings)
 
     def parar(signum: int, _frame: object) -> None:
         log.info("sinal recebido, encerrando", extra={"sinal": signal.Signals(signum).name})
+        if polling is not None:
+            polling.parar()
         # wait=True deixa os jobs em andamento terminarem (RNF12)
         scheduler.shutdown(wait=True)
 

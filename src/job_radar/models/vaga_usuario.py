@@ -28,6 +28,7 @@ class VagaUsuario(ComUUID, ComCriadoEm, Base):
     motivo_usuario: Mapped[str | None]
     expira_em: Mapped[datetime | None]
     status_em: Mapped[datetime] = mapped_column(server_default=func.now())
+    notificado_em: Mapped[datetime | None]  # recomendação enviada ao usuário (bloco 4)
 
 
 class Auditoria(ComUUID, ComCriadoEm, Base):

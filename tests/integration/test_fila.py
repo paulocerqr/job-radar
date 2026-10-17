@@ -64,15 +64,21 @@ def status_de(sessao, vaga_usuario: VagaUsuario) -> str:
 
 
 def test_alimentador_move_as_melhores_ate_o_limite(sessao, admin):
-    scores = [10, 90, 50, 70, 30]
+    scores = [60, 90, 50, 70, 55]
     vagas = [criar(sessao, admin, score=s) for s in scores]
 
     assert alimentar_fila(sessao, AGORA) == 3
 
     na_fila = {v.score_prefiltro for v in vagas if status_de(sessao, v) == StatusVaga.FILA}
-    assert na_fila == {90, 70, 50}
+    assert na_fila == {90, 70, 60}
     historico = sessao.scalar(select(func.count()).select_from(HistoricoStatus))
     assert historico == 3
+
+
+def test_score_baixo_fica_no_pool(sessao, admin):
+    fraca = criar(sessao, admin, score=49)
+    assert alimentar_fila(sessao, AGORA) == 0
+    assert status_de(sessao, fraca) == StatusVaga.POOL
 
 
 def test_alimentador_completa_so_as_vagas_livres(sessao, admin):

@@ -5,7 +5,7 @@ Busca vagas de estágio/emprego em várias fontes, audita cada uma com IA de aco
 - Plano completo (requisitos, regras de negócio, schema, decisões): [`docs/PLANO.md`](docs/PLANO.md)
 - Deploy em Kubernetes (lab na GCP): [`docs/K8S-LAB.md`](docs/K8S-LAB.md)
 
-**Status:** Fase 1 em andamento. Coleta (Gupy, GitHub), pré-filtro e fila funcionando; auditoria por IA e notificações a seguir.
+**Status:** MVP (Fase 1) funcional: coleta (Gupy, GitHub), pré-filtro, fila, auditoria por IA (Codex, Groq, NVIDIA, Gemini) e notificações no Telegram. Próximo: Web UI (Fase 2).
 
 ## Rodando com Docker Compose
 
@@ -38,6 +38,8 @@ Uma única imagem, com comandos diferentes:
 | `job-radar provider ...` | Cadastra, lista, testa e remove providers de IA |
 | `job-radar perfil ...` | Mostra o perfil e define o currículo |
 | `job-radar chave-fernet` | Gera uma `FERNET_KEY` |
+| `job-radar telegram vincular` | Gera o link que vincula o seu chat do Telegram |
+| `job-radar notificar` / `resumo` | Envia as recomendações pendentes / o resumo do dia agora |
 
 Toda a configuração vem de variáveis de ambiente (ver `.env.example`).
 
@@ -64,6 +66,21 @@ job-radar perfil curriculo curriculo.md
 Os presets trazem modelo e limites iniciais. Modelos são aposentados com frequência: se o `testar` falhar com 404/410, liste os disponíveis com `job-radar provider modelos <nome>` e troque com `job-radar provider editar <nome> --modelo ...`. O worker audita um lote por usuário a cada minuto; `job-radar auditar` roda uma rodada na hora.
 
 > O preset `codex` usa o Codex CLI autenticado na máquina, em modo somente leitura, sem salvar sessão e numa pasta temporária vazia. Não funciona dentro do container: use-o rodando `job-radar worker` no host.
+
+## Notificações pelo Telegram
+
+```bash
+# 1. crie um bot no @BotFather e coloque o token no .env como TELEGRAM_BOT_TOKEN
+# 2. gere o link de vínculo (uso único) e abra no Telegram
+job-radar telegram vincular
+# 3. com o worker rodando, toque em "Iniciar" no chat do bot
+job-radar worker
+job-radar telegram status
+```
+
+Cada vaga recomendada chega com os botões **✅ Vou aplicar**, **❌ Ignorar** (com motivo opcional) e **🔗 Abrir vaga**. O worker também avisa quando as recomendadas passam de 80% do limite e envia um resumo às 20:30. O bot responde a `/status`.
+
+O bot usa long polling: não precisa de URL pública nem de porta aberta. Só um processo pode fazer polling por bot, o que casa com o worker de réplica única. Use um bot só para o Job Radar, não o de outro projeto.
 
 ## Desenvolvimento
 
