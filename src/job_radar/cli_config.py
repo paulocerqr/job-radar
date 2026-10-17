@@ -19,6 +19,7 @@ from job_radar.models.enums import Papel, TipoProvider
 
 provider_app = typer.Typer(help="Providers de IA usados na auditoria.", no_args_is_help=True)
 perfil_app = typer.Typer(help="Perfil usado no pré-filtro e na auditoria.", no_args_is_help=True)
+telegram_app = typer.Typer(help="Notificações pelo Telegram.", no_args_is_help=True)
 
 OpcaoUsuario = typer.Option(None, "--usuario", "-u", help="E-mail do usuário (padrão: ADMIN_EMAIL)")
 
@@ -277,3 +278,67 @@ def mostrar(usuario_email: str | None = OpcaoUsuario) -> None:
         typer.echo(f"palavras-chave: {', '.join(perfil.palavras_chave)}")
         typer.echo(f"excluídas: {', '.join(perfil.palavras_excluidas)}")
         typer.echo(f"currículo: {len(perfil.curriculo_md)} caracteres")
+
+
+def _cliente_telegram():
+    from job_radar.notificacao.telegram import ClienteTelegram
+
+    token = get_settings().telegram_bot_token
+    if token is None:
+        raise _falhar("defina TELEGRAM_BOT_TOKEN no .env (crie o bot com o @BotFather)")
+    return ClienteTelegram(token.get_secret_value())
+
+
+@telegram_app.command("vincular")
+def vincular(usuario_email: str | None = OpcaoUsuario) -> None:
+    """Gera um link de uso único que vincula o seu chat do Telegram ao usuário."""
+    import secrets
+
+    from job_radar.models import CanalNotificacao
+    from job_radar.models.enums import TipoCanal
+    from job_radar.notificacao.telegram import ErroTelegram
+
+    cliente = _cliente_telegram()
+    try:
+        bot = cliente.eu()
+    except ErroTelegram as erro:
+        raise _falhar(f"token do bot inválido? {erro}") from None
+
+    token = secrets.token_urlsafe(16)
+    with nova_sessao() as sessao:
+        usuario = _usuario(sessao, usuario_email)
+        canal = sessao.scalar(
+            select(CanalNotificacao).where(
+                CanalNotificacao.usuario_id == usuario.id,
+                CanalNotificacao.tipo == TipoCanal.TELEGRAM,
+            )
+        )
+        if canal is None:
+            canal = CanalNotificacao(usuario_id=usuario.id, tipo=TipoCanal.TELEGRAM)
+            sessao.add(canal)
+        canal.token_vinculo = token
+        sessao.commit()
+    typer.echo("Abra este link no Telegram e toque em Iniciar (uso único):")
+    typer.echo(f"  https://t.me/{bot['username']}?start={token}")
+    typer.echo("O vínculo é concluído pelo worker (`job-radar worker`), que precisa estar rodando.")
+
+
+@telegram_app.command("status")
+def status_telegram(usuario_email: str | None = OpcaoUsuario) -> None:
+    from job_radar.models import CanalNotificacao
+    from job_radar.models.enums import TipoCanal
+
+    with nova_sessao() as sessao:
+        usuario = _usuario(sessao, usuario_email)
+        canal = sessao.scalar(
+            select(CanalNotificacao).where(
+                CanalNotificacao.usuario_id == usuario.id,
+                CanalNotificacao.tipo == TipoCanal.TELEGRAM,
+            )
+        )
+    if canal is None:
+        typer.echo("não vinculado: rode `job-radar telegram vincular`")
+    elif canal.verificado:
+        typer.echo(f"vinculado ao chat {canal.destino} ({'ativo' if canal.ativo else 'inativo'})")
+    else:
+        typer.echo("link gerado, aguardando o /start no Telegram (o worker precisa estar rodando)")

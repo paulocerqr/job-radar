@@ -5,7 +5,7 @@ import logging
 import typer
 from pydantic import ValidationError
 
-from job_radar.cli_config import perfil_app, provider_app
+from job_radar.cli_config import perfil_app, provider_app, telegram_app
 from job_radar.config import get_settings
 from job_radar.logs import configurar_logs
 
@@ -14,6 +14,7 @@ log = logging.getLogger("job_radar.cli")
 
 app.add_typer(provider_app, name="provider")
 app.add_typer(perfil_app, name="perfil")
+app.add_typer(telegram_app, name="telegram")
 
 
 @app.callback()
@@ -123,6 +124,29 @@ def auditar() -> None:
         f"recomendadas: {len(resumo.recomendadas)}, descartadas: {resumo.descartadas},"
         f" erros: {resumo.erros}, adiadas: {resumo.adiadas}"
     )
+
+
+@app.command()
+def notificar() -> None:
+    """Envia as recomendações ainda não notificadas (o worker faz isso a cada minuto)."""
+    from job_radar.cli_config import _cliente_telegram
+    from job_radar.db import nova_sessao
+    from job_radar.notificacao.notificador import notificar as enviar
+
+    with nova_sessao() as sessao:
+        typer.echo(f"enviadas: {enviar(sessao, _cliente_telegram())}")
+
+
+@app.command()
+def resumo() -> None:
+    """Envia o resumo do dia agora (o worker envia às 20:30)."""
+    from job_radar.cli_config import _cliente_telegram
+    from job_radar.db import nova_sessao
+    from job_radar.notificacao.notificador import enviar_resumos
+
+    with nova_sessao() as sessao:
+        enviados = enviar_resumos(sessao, _cliente_telegram(), get_settings().tz)
+    typer.echo(f"resumos enviados: {enviados}")
 
 
 @app.command("chave-fernet")

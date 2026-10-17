@@ -14,3 +14,13 @@ def test_formatador_json_inclui_extras():
     assert dados["logger"] == "teste"
     assert dados["fonte"] == "gupy"
     assert "ts" in dados
+
+
+def test_variavel_vazia_conta_como_ausente(monkeypatch):
+    from job_radar.config import Settings
+
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "")
+    monkeypatch.setenv("FERNET_KEY", "  ")
+    settings = Settings()
+    assert settings.telegram_bot_token is None
+    assert settings.fernet_key is None
