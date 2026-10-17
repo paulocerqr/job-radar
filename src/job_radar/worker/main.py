@@ -49,7 +49,38 @@ def job_coletar(fonte_id: str, settings: Settings) -> None:
         executar_coleta(sessao, fonte_id)
 
 
+def job_alimentar_fila() -> None:
+    from job_radar.db import nova_sessao
+    from job_radar.fila.alimentador import alimentar_fila
+
+    with nova_sessao() as sessao:
+        alimentar_fila(sessao)
+
+
+def job_expirar() -> None:
+    from job_radar.db import nova_sessao
+    from job_radar.fila.expirador import expirar
+
+    with nova_sessao() as sessao:
+        expirar(sessao)
+
+
 def registrar_jobs(scheduler: BlockingScheduler, settings: Settings) -> None:
+    # PLANO §8: alimentador a cada 10 min, expirador a cada hora, 24h por dia
+    for funcao, minutos in ((job_alimentar_fila, 10), (job_expirar, 60)):
+        scheduler.add_job(
+            funcao,
+            "interval",
+            minutes=minutos,
+            id=funcao.__name__,
+            next_run_time=datetime.now(UTC),
+            max_instances=1,
+            coalesce=True,
+        )
+    registrar_coletas(scheduler, settings)
+
+
+def registrar_coletas(scheduler: BlockingScheduler, settings: Settings) -> None:
     if not settings.coleta_no_worker:
         log.info("coleta externa ao worker (CronJob)")
         return

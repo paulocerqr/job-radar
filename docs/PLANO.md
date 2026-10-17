@@ -640,7 +640,7 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 - [x] Normalizador, dedupe, pré-filtro (incluindo localidades do DF).
 - [x] Máquina de estados + `historico_status`.
 - [x] Coleta agendada no worker (janela 08-20h) e via `job-radar coletar <fonte>`.
-- [ ] Alimentador e expirador.
+- [x] Alimentador e expirador (worker + `job-radar alimentar` / `job-radar expirar`). Alerta de capacidade (RN25) e verificação de vaga no ar (RN24) ficam com a notificação.
 - [ ] Providers `cli` e `openai_compatible`; auditor com lote, validação, fallback e backoff.
 - [ ] Prompt v1 de auditoria + avaliação manual com ~20 vagas reais.
 - [ ] Webhook n8n + fluxo Telegram com botões confirmar/ignorar.

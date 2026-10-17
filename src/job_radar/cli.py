@@ -82,6 +82,26 @@ def seed() -> None:
 
 
 @app.command()
+def alimentar() -> None:
+    """Move as melhores vagas do pool para a fila (o worker faz isso a cada 10 min)."""
+    from job_radar.db import nova_sessao
+    from job_radar.fila.alimentador import alimentar_fila
+
+    with nova_sessao() as sessao:
+        log.info("fila alimentada", extra={"movidas": alimentar_fila(sessao)})
+
+
+@app.command()
+def expirar() -> None:
+    """Expira vagas além do TTL no pool e nas recomendadas (o worker faz isso a cada hora)."""
+    from job_radar.db import nova_sessao
+    from job_radar.fila.expirador import expirar as expirar_vagas
+
+    with nova_sessao() as sessao:
+        log.info("expiração concluída", extra={"expiradas": expirar_vagas(sessao)})
+
+
+@app.command()
 def coletar(fonte: str) -> None:
     """Executa uma coleta da fonte e sai (CronJob no Kubernetes, D17)."""
     from job_radar.coleta.base import fontes_registradas
