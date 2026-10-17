@@ -5,7 +5,7 @@ Busca vagas de estágio/emprego em várias fontes, audita cada uma com IA de aco
 - Plano completo (requisitos, regras de negócio, schema, decisões): [`docs/PLANO.md`](docs/PLANO.md)
 - Deploy em Kubernetes (lab na GCP): [`docs/K8S-LAB.md`](docs/K8S-LAB.md)
 
-**Status:** Fase 0 (fundação) concluída. Coletores, auditoria e notificações chegam na Fase 1.
+**Status:** Fase 1 em andamento. Coleta (Gupy, GitHub), pré-filtro e fila funcionando; auditoria por IA e notificações a seguir.
 
 ## Rodando com Docker Compose
 
@@ -32,6 +32,8 @@ Uma única imagem, com comandos diferentes:
 | `job-radar migrar [revisao]` | Aplica as migrations e sai |
 | `job-radar seed` | Cria fontes e o usuário admin |
 | `job-radar coletar <fonte>` | Executa uma coleta e sai (CronJob no Kubernetes) |
+| `job-radar alimentar` | Move as melhores vagas do pool para a fila |
+| `job-radar expirar` | Expira vagas além do TTL |
 
 Toda a configuração vem de variáveis de ambiente (ver `.env.example`).
 
