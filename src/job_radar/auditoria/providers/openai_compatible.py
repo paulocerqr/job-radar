@@ -29,6 +29,16 @@ class ProviderOpenAICompativel:
         except httpx.HTTPError as erro:
             raise ErroProvider(f"falha de rede: {erro!r}") from None
 
+    def listar_modelos(self) -> list[str]:
+        url = self.url.removesuffix("/chat/completions") + "/models"
+        try:
+            resposta = self.http.get(url, headers={"Authorization": f"Bearer {self.api_key}"})
+        except httpx.HTTPError as erro:
+            raise ErroProvider(f"falha de rede: {erro!r}") from None
+        if resposta.status_code >= 400:
+            raise ErroProvider(f"{resposta.status_code}: {resposta.text[:300]}", transitorio=False)
+        return sorted(item["id"] for item in resposta.json().get("data", []))
+
     def completar(self, sistema: str, usuario: str) -> RespostaProvider:
         corpo: dict[str, Any] = {
             "model": self.modelo,
@@ -51,7 +61,8 @@ class ProviderOpenAICompativel:
                 f"429: {resposta.text[:200]}",
                 retry_after_s=float(retry_after) if retry_after else None,
             )
-        if resposta.status_code in (400, 401, 403, 404):
+        # erros de configuração (chave, modelo inexistente ou aposentado): repetir não adianta
+        if resposta.status_code in (400, 401, 403, 404, 410):
             raise ErroProvider(f"{resposta.status_code}: {resposta.text[:300]}", transitorio=False)
         if resposta.status_code >= 400:
             raise ErroProvider(f"{resposta.status_code}: {resposta.text[:300]}")
