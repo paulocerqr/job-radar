@@ -13,7 +13,7 @@
 |---|---|---|
 | Créditos GCP (Free Trial) | R$ 1.738,20 restantes | Cobrem ~3 VMs ligadas por 1 mês com folga. **Custo não é o gargalo.** |
 | **Expiração dos créditos** | **16/11/2026** | **Prazo é o gargalo.** Teardown completo até **15/11/2026**. |
-| Cota de vCPU do Free Trial | ~8 vCPUs simultâneas (a confirmar em *IAM & Admin → Quotas*) | Topologia 4 + 2 + 2 usa a cota inteira. |
+| Cotas GCP (verificadas em 17/10) | 32 vCPUs (todas as regiões), 24 VMs, 8 IPv4 externos e 500 GB de disco SSD em us-central1 | **Cota não limita.** Topologia 4 + 2 + 2 usa 8/32 vCPUs. O limite real é o **saldo** (~US$ 310). |
 | Produção existente | Servidor doméstico (UtilityDev, n8n) | O lab **não depende** da produção e **não altera** a produção. |
 | Job Radar | Ainda não implementado; MVP estimado em ~1–1,5 semana | **App principal do lab**, desenvolvido em trilha paralela ao cluster (§7, §8). |
 | VMs existentes (`serverk3s`, worker) | Paradas; só com Beszel agent | **Serão excluídas** e recriadas pelo Terraform (K12). |
@@ -302,7 +302,8 @@ App   (40%): Job Radar Fase 0     →  Job Radar Fase 1 (MVP) →  calibração 
 ### Semana 1 — 17/10 a 23/10
 
 **Infra**
-- [ ] Confirmar cota de vCPU (8); criar budget alerts.
+- [x] Cotas verificadas (32 vCPUs, 8 IPs, 500 GB SSD). 
+- [ ] Criar budget alerts.
 - [ ] Remover o sistema `serverk3s` do Beszel Hub e aproveitar para **rotacionar o token** pendente do `beszel-infra`.
 - [ ] Remover as VMs antigas da tailnet; **excluir as VMs e discos** criados pelo console (conferir snapshots/IPs órfãos).
 - [ ] ACL `tag:k8s-lab` no Tailscale; gerar **auth key efêmera e reutilizável** com essa tag.
@@ -403,7 +404,7 @@ Se B for adotada: a EC2 entra na tailnet e no Beszel; imagens vêm do mesmo GHCR
 | kubeadm consome tempo demais | Timebox de 2 dias + fallback k3s (K01) |
 | Automação Ansible atrasa a semana 1 | Cluster manual já cumpre o marco de 20/10; playbooks podem deslizar para a semana 2 sem bloquear a plataforma |
 | Auth key do Tailscale vazada no state do Terraform/cloud-init | Key **efêmera**, com tag e expiração curta; passada por variável sensível; `terraform.tfstate` fora do Git |
-| Cota de vCPU impede o `worker-2` | Usar e2-medium no worker-2 ou reduzir `cp-1` para e2-standard-2 |
+| Gasto acima do previsto (ex.: VMs maiores, discos esquecidos) | Budget alerts; manter 4 + 2 + 2; excluir as VMs antigas logo (discos e IPs parados também cobram) |
 | Nó com local-path cai e leva o Postgres | Backup diário; staging com dados sintéticos |
 | Tailscale fora do ar impede administração | IAP/console serial da GCP como acesso de emergência documentado |
 | Pods precisando de `*.ts.net` | Evitar; se necessário, `forward` no CoreDNS (Incidente 001) |
