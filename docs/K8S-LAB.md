@@ -76,7 +76,8 @@ Escopo mínimo: **O1–O5**. **O6–O7** são diferenciais se os créditos permi
 
 | # | Decisão | Alternativas | Motivo |
 |---|---|---|---|
-| K01 | **kubeadm** em VMs | GKE, k3s | Mostra domínio dos componentes do cluster; GKE esconde o control plane. |
+| K01 | **kubeadm** em VMs na GCP | GKE, k3s | Mostra domínio dos componentes do cluster (etcd, apiserver, certificados, upgrade); é a base da CKA/CKS. GKE esconde o control plane; k3s abstrai demais para o objetivo de estudo. |
+| K12 | **k3s single-node** no servidor local como destino permanente (opcional) | Voltar ao docker-compose | Leve (~500 MB–1 GB), já traz ServiceLB, Traefik e local-path; reaproveita os manifests via overlay `local`. docker-compose fica como plano B se faltar RAM. |
 | K02 | **Cilium** como CNI | Calico, Flannel | NetworkPolicy + Hubble (visualização de tráfego) rende boa documentação. |
 | K03 | **ingress-nginx** com `hostPort` em um worker + IP estático | Service LoadBalancer, cloud-controller-manager | Fora do GKE não há LB automático; hostPort é simples e explicável. CCM fica como evolução. |
 | K04 | Armazenamento: começar com **local-path-provisioner**; evoluir para **GCE PD CSI driver** | Só PD CSI | local-path é trivial; PD CSI é o "upgrade" documentado (volume sobrevive à troca de nó). |
@@ -185,7 +186,8 @@ k8s-lab/
 │   │   ├── base/                 # deployment-api, deployment-worker, cronjobs, job-migrar,
 │   │   │                         # service, configmap, pdb, networkpolicy, kustomization.yaml
 │   │   └── overlays/
-│   │       └── gcp/              # ingress, sealedsecret, tag da imagem, recursos
+│   │       ├── gcp/              # ingress, sealedsecret, tag da imagem, recursos
+│   │       └── local/            # k3s no servidor local (fase G)
 │   ├── postgres/
 │   │   └── base/                 # statefulset, service, cronjob-backup
 │   └── n8n/
@@ -235,7 +237,36 @@ k8s-lab/
 - [ ] Backup final do Postgres; exportar para o servidor local.
 - [ ] Gravar demonstração / prints para o README.
 - [ ] `terraform destroy`.
-- [ ] Job Radar continua no servidor local via docker-compose (mesma imagem).
+- [ ] Job Radar continua no servidor local: k3s (Fase G) ou docker-compose (plano B), mesma imagem.
+
+### Fase G — k3s no servidor local (opcional)
+
+Pré-requisito: ~600 MB–1 GB de RAM livre no servidor local.
+
+- [ ] Instalar k3s single-node (`--disable traefik` se preferir manter ingress-nginx por consistência com a GCP).
+- [ ] Criar `apps/job-radar/overlays/local`, `apps/postgres/overlays/local` e `apps/n8n/overlays/local`:
+  - `jobradar-api` com 1 réplica, sem `topologySpreadConstraints` e sem PDB;
+  - recursos (requests/limits) reduzidos;
+  - StorageClass `local-path` (embutida no k3s);
+  - Ingress com host da rede local; TLS opcional;
+  - provider CLI (Claude/Codex) indisponível no cluster: manter auditoria por API **ou** manter o `worker` fora do cluster (ver nota).
+- [ ] Decidir sobre o n8n: migrar para o cluster ou apontar o webhook para a instância já existente no servidor (`ExternalName` Service ou URL direta).
+- [ ] Restaurar o backup do Postgres vindo da GCP.
+- [ ] Documentar em `docs/10-k3s-local.md`: diferenças kubeadm × k3s na prática e "mesmo app, dois clusters".
+
+> **Nota (CLI no k3s local):** se a auditoria pelo Claude/Codex CLI for essencial no ambiente local, a opção mais simples é rodar o `job-radar worker` fora do k3s (systemd ou container no host com o CLI autenticado), conectado ao Postgres do cluster. O resto (api, CronJobs, Postgres) fica no k3s.
+
+### Comparativo kubeadm × k3s (referência)
+
+| | kubeadm | k3s |
+|---|---|---|
+| Instalação | Manual (containerd, sysctl, CNI, join) | Um comando por nó |
+| RAM do control plane | ~1,5–2 GB | ~0,5–1 GB |
+| Já incluído | Nada (escolhe-se CNI, ingress, storage) | Flannel, Traefik, ServiceLB, local-path, CoreDNS |
+| LoadBalancer fora de nuvem gerenciada | Requer solução extra | ServiceLB embutido |
+| Control plane | Static pods visíveis (etcd, apiserver...) | Binário único (SQLite ou etcd embutido) |
+| Certificações (CKA/CKS) | Usam kubeadm | — |
+| Uso neste projeto | Lab na GCP (estudo/portfólio) | Ambiente permanente local |
 
 ---
 
