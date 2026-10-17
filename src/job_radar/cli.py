@@ -84,11 +84,20 @@ def seed() -> None:
 @app.command()
 def coletar(fonte: str) -> None:
     """Executa uma coleta da fonte e sai (CronJob no Kubernetes, D17)."""
-    from job_radar.coleta.base import FonteDesconhecida, fontes_registradas, obter_coletor
+    from job_radar.coleta.base import fontes_registradas
+    from job_radar.coleta.execucao import FonteNaoCadastrada, executar_coleta
+    from job_radar.db import nova_sessao
+    from job_radar.models.enums import StatusExecucao
 
-    try:
-        coletor = obter_coletor(fonte)
-    except FonteDesconhecida:
-        log.error("fonte desconhecida", extra={"fonte": fonte, "disponiveis": fontes_registradas()})
-        raise typer.Exit(2) from None
-    coletor.executar()
+    disponiveis = fontes_registradas()
+    if fonte not in disponiveis:
+        log.error("fonte desconhecida", extra={"fonte": fonte, "disponiveis": disponiveis})
+        raise typer.Exit(2)
+    with nova_sessao() as sessao:
+        try:
+            execucao = executar_coleta(sessao, fonte)
+        except FonteNaoCadastrada:
+            log.error("fonte sem cadastro no banco; rode `job-radar seed`", extra={"fonte": fonte})
+            raise typer.Exit(2) from None
+    if execucao.status == StatusExecucao.ERRO:
+        raise typer.Exit(1)

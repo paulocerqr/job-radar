@@ -1,0 +1,94 @@
+from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime, timedelta
+
+from job_radar.filtro.prefiltro import avaliar
+from job_radar.models.enums import Modalidade, Nivel
+
+AGORA = datetime(2026, 10, 17, 12, tzinfo=UTC)
+
+
+@dataclass
+class Vaga:
+    titulo: str = "Estágio em DevOps"
+    descricao: str | None = "Linux, Docker e Python"
+    cidade: str | None = "Brasília"
+    uf: str | None = "DF"
+    modalidade: str = Modalidade.PRESENCIAL
+    nivel: str = Nivel.ESTAGIO
+    publicada_em: datetime | None = AGORA - timedelta(days=1)
+
+
+@dataclass
+class Perfil:
+    palavras_chave: list[str] = field(
+        default_factory=lambda: ["devops", "python", "docker", "linux", "backend"]
+    )
+    palavras_excluidas: list[str] = field(default_factory=lambda: ["senior", "pleno"])
+    niveis: list[str] = field(default_factory=lambda: [Nivel.ESTAGIO.value])
+    aceita_remoto: bool = True
+    localidades: list[dict] = field(default_factory=lambda: [{"cidade": "Brasília", "uf": "DF"}])
+
+
+def test_aprova_vaga_ideal_com_score_alto():
+    resultado = avaliar(Vaga(), Perfil(), confiabilidade_fonte=80, agora=AGORA)
+    assert resultado.aprovada
+    # título 40 + descrição 3x5 + recência 15 + fonte 8
+    assert resultado.score == 78
+
+
+def test_reprova_termo_excluido_no_titulo():
+    resultado = avaliar(Vaga(titulo="DevOps Sênior"), Perfil(), 80, AGORA)
+    assert not resultado.aprovada
+    assert "senior" in resultado.motivo
+
+
+def test_termo_excluido_so_na_descricao_nao_reprova():
+    vaga = Vaga(descricao="Você vai trabalhar com pessoas sênior. Python e Docker.")
+    assert avaliar(vaga, Perfil(), 80, AGORA).aprovada
+
+
+def test_reprova_nivel_fora_do_perfil():
+    resultado = avaliar(Vaga(titulo="DevOps", nivel=Nivel.JUNIOR), Perfil(), 80, AGORA)
+    assert not resultado.aprovada
+
+
+def test_nivel_desconhecido_passa_com_penalidade():
+    base = avaliar(Vaga(), Perfil(), 80, AGORA).score
+    resultado = avaliar(Vaga(nivel=Nivel.DESCONHECIDO), Perfil(), 80, AGORA)
+    assert resultado.aprovada
+    assert resultado.score == base - 10
+
+
+def test_reprova_sem_palavra_chave():
+    vaga = Vaga(titulo="Estágio em Marketing", descricao="Redes sociais e campanhas")
+    assert not avaliar(vaga, Perfil(), 80, AGORA).aprovada
+
+
+def test_reprova_presencial_fora_das_localidades():
+    vaga = Vaga(cidade="São Paulo", uf="SP")
+    resultado = avaliar(vaga, Perfil(), 80, AGORA)
+    assert not resultado.aprovada
+    assert "localidades" in resultado.motivo
+
+
+def test_remoto_de_qualquer_lugar_passa():
+    vaga = Vaga(cidade="São Paulo", uf="SP", modalidade=Modalidade.REMOTO)
+    assert avaliar(vaga, Perfil(), 80, AGORA).aprovada
+
+
+def test_remoto_reprovado_se_perfil_nao_aceita():
+    vaga = Vaga(modalidade=Modalidade.REMOTO)
+    assert not avaliar(vaga, replace(Perfil(), aceita_remoto=False), 80, AGORA).aprovada
+
+
+def test_local_desconhecido_passa_com_penalidade():
+    base = avaliar(Vaga(), Perfil(), 80, AGORA).score
+    resultado = avaliar(Vaga(cidade=None, uf=None), Perfil(), 80, AGORA)
+    assert resultado.aprovada
+    assert resultado.score == base - 10
+
+
+def test_vaga_antiga_perde_pontos_de_recencia():
+    nova = avaliar(Vaga(), Perfil(), 80, AGORA).score
+    antiga = avaliar(Vaga(publicada_em=AGORA - timedelta(days=30)), Perfil(), 80, AGORA).score
+    assert antiga == nova - 15

@@ -171,7 +171,7 @@ Toda transição gera registro em `historico_status`.
 **Coleta**
 - RN01: Coleta roda das **08:00 às 20:00** (America/Sao_Paulo), com intervalo **por fonte** (ex.: Gupy 1h, GitHub 2h, LinkedIn 4h).
 - RN02: Cada execução coleta no máximo `fonte.max_itens_execucao` itens (ex.: 10–50).
-- RN03: Termos de busca = união das palavras-chave de todos os usuários ativos.
+- RN03: Termos de busca vêm de `fonte.config` (ex.: Gupy `termos` + `tipos`). As palavras-chave do perfil são aplicadas no pré-filtro, não na busca: a API do Gupy busca só no **título**, e termos técnicos ("devops", "backend") quase nunca aparecem em títulos de estágio. Termos amplos ("ti", "tecnologia", "software") + filtro `vacancy_type_internship` trazem o volume certo.
 - RN04: Coleta é **independente** da capacidade da fila; o gargalo é a auditoria.
 
 **Deduplicação**
@@ -612,7 +612,7 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 
 | Fase | Fonte | Método | Observação |
 |---|---|---|---|
-| 1 | Gupy | Endpoint JSON público | Maior volume de estágios no BR |
+| 1 | Gupy | Endpoint JSON do portal: `portal.gupy.io/api/job-search/jobs` (o antigo `portal.api.gupy.io/api/v1/jobs` responde 404 desde out/2026) | Maior volume de estágios no BR; `jobName` busca no título; filtro `type=vacancy_type_internship` |
 | 1 | GitHub (backend-br/vagas, frontendbr/vagas e similares) | API GitHub (issues) | Oficial |
 | 2 | Greenhouse / Lever / Ashby | APIs públicas por empresa | Lista de empresas em `fonte.config` |
 | 4 | LinkedIn / Indeed / Glassdoor | `python-jobspy` | Frágil, rate limit baixo, sem login |
@@ -636,9 +636,10 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 - [x] Seed idempotente: usuário admin, perfil (Brasília-DF, estágio, palavras-chave), fontes.
 
 ### Fase 1 — MVP (usuário único) (meta: 30/10/2026)
-- [ ] Interface `Coletor` + coletores Gupy e GitHub (com fixtures e testes).
-- [ ] Normalizador, dedupe, pré-filtro (incluindo localidades do DF).
-- [ ] Máquina de estados + `historico_status`.
+- [x] Interface `Coletor` + coletores Gupy e GitHub (com fixtures e testes).
+- [x] Normalizador, dedupe, pré-filtro (incluindo localidades do DF).
+- [x] Máquina de estados + `historico_status`.
+- [x] Coleta agendada no worker (janela 08-20h) e via `job-radar coletar <fonte>`.
 - [ ] Alimentador e expirador.
 - [ ] Providers `cli` e `openai_compatible`; auditor com lote, validação, fallback e backoff.
 - [ ] Prompt v1 de auditoria + avaliação manual com ~20 vagas reais.
