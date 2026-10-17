@@ -47,9 +47,8 @@ Toda a configuração vem de variáveis de ambiente (ver `.env.example`).
 # 1. chave que cifra as API keys no banco (coloque no .env como FERNET_KEY)
 docker compose run --rm api chave-fernet
 
-# 2. providers, em ordem de prioridade (a chave vem de uma variável de ambiente,
-#    para não ficar no histórico do shell; sem --api-key-env ela é pedida no terminal)
-export GROQ_API_KEY=...
+# 2. providers, em ordem de prioridade. --api-key-env lê a variável do ambiente ou do .env
+#    (a chave não fica no histórico do shell); sem ele, a chave é pedida no terminal
 job-radar provider adicionar groq --preset groq --api-key-env GROQ_API_KEY
 job-radar provider adicionar nvidia --preset nvidia --api-key-env NVIDIA_API_KEY
 job-radar provider adicionar gemini --preset gemini --api-key-env GEMINI_API_KEY
