@@ -57,6 +57,14 @@ def job_alimentar_fila() -> None:
         alimentar_fila(sessao)
 
 
+def job_auditar() -> None:
+    from job_radar.auditoria.auditor import auditar
+    from job_radar.db import nova_sessao
+
+    with nova_sessao() as sessao:
+        auditar(sessao)
+
+
 def job_expirar() -> None:
     from job_radar.db import nova_sessao
     from job_radar.fila.expirador import expirar
@@ -66,8 +74,8 @@ def job_expirar() -> None:
 
 
 def registrar_jobs(scheduler: BlockingScheduler, settings: Settings) -> None:
-    # PLANO §8: alimentador a cada 10 min, expirador a cada hora, 24h por dia
-    for funcao, minutos in ((job_alimentar_fila, 10), (job_expirar, 60)):
+    # PLANO §8: auditor a cada minuto, alimentador a cada 10 min, expirador a cada hora
+    for funcao, minutos in ((job_auditar, 1), (job_alimentar_fila, 10), (job_expirar, 60)):
         scheduler.add_job(
             funcao,
             "interval",

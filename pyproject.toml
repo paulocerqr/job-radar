@@ -8,6 +8,7 @@ dependencies = [
     "alembic>=1.14",
     "apscheduler>=3.11,<4",
     "argon2-cffi>=23.1",
+    "cryptography>=43",
     "fastapi>=0.115",
     "httpx>=0.28",
     "psycopg[binary]>=3.2",
@@ -43,6 +44,9 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Argument", "typer.Option"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/job_radar/migrations/versions/*" = ["E501"]
