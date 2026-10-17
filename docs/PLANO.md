@@ -625,7 +625,9 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 
 ## 12. Fases de execução
 
-### Fase 0 — Fundação
+### Fase 0 — Fundação (meta: 23/10/2026)
+
+> Datas alinhadas ao cronograma do lab Kubernetes (`docs/K8S-LAB.md` §7). Com 3–4 h/dia divididas com a trilha de infra.
 - [ ] `pyproject.toml`, ruff, pytest, docker-compose (`api`, `worker`, `postgres`).
 - [ ] Config (`pydantic-settings`), `.env.example`, logging JSON.
 - [ ] CLI Typer (`api`, `worker`, `migrar`, `seed`, `coletar`).
@@ -634,7 +636,7 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 - [ ] Models + migration inicial (schema da seção 6).
 - [ ] Seed: usuário admin, perfil (Brasília-DF, estágio, palavras-chave), fontes.
 
-### Fase 1 — MVP (usuário único)
+### Fase 1 — MVP (usuário único) (meta: 30/10/2026)
 - [ ] Interface `Coletor` + coletores Gupy e GitHub (com fixtures e testes).
 - [ ] Normalizador, dedupe, pré-filtro (incluindo localidades do DF).
 - [ ] Máquina de estados + `historico_status`.
