@@ -9,3 +9,7 @@ build/
 .env
 .env.*
 !.env.example
+
+# dados pessoais: currículo e afins ficam fora do repositório (~/.config/job-radar/)
+curriculo*
+*.pdf
