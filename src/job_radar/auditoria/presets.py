@@ -1,7 +1,8 @@
-"""Valores iniciais por provider (modelos verificados em 17/10/2026).
+"""Valores iniciais por provider (modelos verificados em 21/10/2026).
 
 Modelos são aposentados com frequência: liste os disponíveis com `job-radar provider modelos`
-e troque com `job-radar provider editar <nome> --modelo ...`."""
+e troque com `job-radar provider editar <nome> --modelo ...`. A NVIDIA lista modelos que já
+não atendem (404 "Function ... Not found"): confirme sempre com `job-radar provider testar`."""
 
 from dataclasses import dataclass
 
@@ -31,7 +32,7 @@ PRESETS: dict[str, Preset] = {
     "nvidia": Preset(
         tipo=TipoProvider.OPENAI_COMPATIBLE,
         base_url="https://integrate.api.nvidia.com/v1",
-        modelo="nvidia/nemotron-3-super-120b-a12b",
+        modelo="nvidia/nemotron-3.5-lightning-30b-a3b",  # o 3-super saiu do ar (404) em 21/10
         rpm=40,
     ),
     "gemini": Preset(
