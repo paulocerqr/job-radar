@@ -50,6 +50,23 @@ Só começa se `testes` passar (`needs: testes`).
 
 Em um PR, a imagem é construída (para garantir que o `Dockerfile` funciona) mas **não é publicada**.
 
+### Job 3: `atualizar-lab` (GitOps)
+
+Só em push na `main`, depois de a imagem ser publicada. Faz o deploy no [k8s-lab](https://github.com/paulocerqr/k8s-lab) **sem acessar o cluster**: só muda o Git, e o Argo CD do cluster faz o resto.
+
+| Passo | O que faz |
+|---|---|
+| `actions/checkout@v7` do `paulocerqr/k8s-lab` | Com a deploy key `K8S_LAB_DEPLOY_KEY` (escrita só naquele repositório) |
+| `sed` no `apps/job-radar/kustomization.yaml` | `newTag` ← SHA do commit que gerou a imagem |
+| `git commit` + `git push` | Autor `github-actions[bot]`; mensagem `ci: job-radar → <sha>` com o link da execução; com rebase e nova tentativa se o k8s-lab mudou no meio |
+
+```
+merge na main ─► testes ─► imagem :<sha> no GHCR ─► commit no k8s-lab (newTag)
+                                                      └► Argo CD (até 3 min): migração + rollout
+```
+
+A deploy key foi criada em 24/10/2026 com `ssh-keygen` + `gh repo deploy-key add --allow-write` + `gh secret set`; a chave privada só existe no secret (a cópia local foi destruída). Para revogar: apagar a deploy key em *k8s-lab → Settings → Deploy keys*.
+
 ### Permissões
 
 ```yaml
@@ -58,7 +75,7 @@ permissions:
   packages: write    # publicar no GHCR
 ```
 
-O `GITHUB_TOKEN` é criado automaticamente pelo GitHub para cada execução e expira no fim dela. Nenhum segredo precisou ser cadastrado no repositório.
+O `GITHUB_TOKEN` é criado automaticamente pelo GitHub para cada execução e expira no fim dela. O único segredo cadastrado é a deploy key do job `atualizar-lab`, porque o `GITHUB_TOKEN` só vale para o próprio repositório.
 
 ### Runner e versões fixas
 
@@ -95,7 +112,8 @@ gh run watch <id> --exit-status           # 6. acompanha o CI
 gh pr merge <n> --rebase --delete-branch  # 7. merge na main (histórico linear) e apaga a branch
 
 git switch main && git pull --ff-only     # 8. atualiza a main local
-                                          # → push na main dispara o CI de novo e PUBLICA a imagem
+                                          # → push na main dispara o CI de novo, PUBLICA a imagem
+                                          #   e aponta o k8s-lab para ela (Argo CD faz o deploy)
 ```
 
 | PR | Conteúdo |

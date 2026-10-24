@@ -68,3 +68,33 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # GitOps (k8s-lab, docs/13-argocd.md): com a imagem publicada, aponta o lab para ela.
+  # O Argo CD percebe o commit no k8s-lab e faz migração + rollout.
+  atualizar-lab:
+    needs: imagem
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      # deploy key com escrita só no k8s-lab (secret K8S_LAB_DEPLOY_KEY)
+      - uses: actions/checkout@v7
+        with:
+          repository: paulocerqr/k8s-lab
+          ssh-key: ${{ secrets.K8S_LAB_DEPLOY_KEY }}
+          path: k8s-lab
+      - name: newTag → ${{ github.sha }}
+        working-directory: k8s-lab
+        run: |
+          arquivo=apps/job-radar/kustomization.yaml
+          sed -Ei "s/^(    newTag: )[0-9a-f]{40}/\1${GITHUB_SHA}/" "$arquivo"
+          if git diff --quiet; then echo "o lab já está em ${GITHUB_SHA}"; exit 0; fi
+          git diff
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "ci: job-radar → ${GITHUB_SHA::7}" \
+            -m "Imagem ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_SHA} publicada pelo CI: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # outro push no k8s-lab no meio do caminho: rebase e tenta de novo
+          for tentativa in 1 2 3; do git push && exit 0; git pull --rebase; done
+          exit 1
