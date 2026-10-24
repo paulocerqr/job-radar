@@ -1,10 +1,12 @@
 """Processo `worker`: APScheduler com os jobs da fila (PLANO §8).
 
-Sempre com 1 réplica (D16). Na Fase 0 só registra o heartbeat usado pelo health check.
+Sempre com 1 réplica (D16), garantida pela trava no Postgres (`trava.py`).
 """
 
 import logging
+import os
 import signal
+import threading
 import time
 from datetime import UTC, datetime
 from datetime import time as Hora
@@ -15,10 +17,12 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from sqlalchemy import select
 
 from job_radar.config import Settings
+from job_radar.worker.trava import TravaWorker
 
 log = logging.getLogger(__name__)
 
 INTERVALO_HEARTBEAT_S = 30
+ESPERA_TRAVA_S = 5
 
 
 def gravar_heartbeat(caminho: Path) -> None:
@@ -31,6 +35,42 @@ def heartbeat_recente(caminho: Path, max_idade_s: int) -> bool:
     except FileNotFoundError:
         return False
     return time.time() - modificado_em <= max_idade_s
+
+
+def job_heartbeat(caminho: Path, trava: TravaWorker) -> None:
+    """Grava o heartbeat e confere a trava; se outro worker ficou com ela, encerra este."""
+    if not trava.mantida():
+        log.warning("trava do worker perdida, tentando readquirir")
+        try:
+            obtida = trava.tentar()
+        except Exception:
+            # banco fora: nenhum worker consegue trabalhar; tenta de novo no próximo ciclo
+            log.error("banco indisponível para readquirir a trava", exc_info=True)
+            obtida = True
+        if not obtida:
+            log.error("outro worker está com a trava: encerrando este")
+            os.kill(os.getpid(), signal.SIGTERM)
+            return
+    gravar_heartbeat(caminho)
+
+
+def esperar_trava(trava: TravaWorker, caminho: Path, parar: threading.Event) -> bool:
+    """Bloqueia até pegar a trava (True) ou até pedirem para encerrar (False)."""
+    avisado = False
+    while not parar.is_set():
+        try:
+            if trava.tentar():
+                log.info("trava do worker obtida")
+                return True
+            if not avisado:
+                log.info("outro worker está com a trava; aguardando ele encerrar")
+                avisado = True
+        except Exception:
+            log.error("banco indisponível ao pegar a trava do worker", exc_info=True)
+        # a liveness olha o heartbeat: esperar a trava não é estar travado
+        gravar_heartbeat(caminho)
+        parar.wait(ESPERA_TRAVA_S)
+    return False
 
 
 def dentro_da_janela(agora: Hora, inicio: Hora, fim: Hora) -> bool:
@@ -169,28 +209,43 @@ def registrar_telegram(scheduler: BlockingScheduler, settings: Settings):
 
 
 def executar(settings: Settings) -> None:
+    from job_radar.db import get_engine
+
+    trava = TravaWorker(get_engine())
+    encerrando = threading.Event()
     scheduler = BlockingScheduler(timezone=settings.tz)
+    polling = None
+
+    def parar(signum: int, _frame: object) -> None:
+        log.info("sinal recebido, encerrando", extra={"sinal": signal.Signals(signum).name})
+        encerrando.set()
+        if polling is not None:
+            polling.parar()
+        if scheduler.running:
+            # wait=True deixa os jobs em andamento terminarem (RNF12)
+            scheduler.shutdown(wait=True)
+
+    signal.signal(signal.SIGTERM, parar)
+    signal.signal(signal.SIGINT, parar)
+
+    if not esperar_trava(trava, settings.worker_heartbeat_path, encerrando):
+        log.info("worker encerrado antes de obter a trava")
+        return
+
     scheduler.add_job(
-        gravar_heartbeat,
+        job_heartbeat,
         "interval",
         seconds=INTERVALO_HEARTBEAT_S,
-        args=[settings.worker_heartbeat_path],
+        args=[settings.worker_heartbeat_path, trava],
         id="heartbeat",
         next_run_time=datetime.now(UTC),
     )
     registrar_jobs(scheduler, settings)
     polling = registrar_telegram(scheduler, settings)
 
-    def parar(signum: int, _frame: object) -> None:
-        log.info("sinal recebido, encerrando", extra={"sinal": signal.Signals(signum).name})
-        if polling is not None:
-            polling.parar()
-        # wait=True deixa os jobs em andamento terminarem (RNF12)
-        scheduler.shutdown(wait=True)
-
-    signal.signal(signal.SIGTERM, parar)
-    signal.signal(signal.SIGINT, parar)
-
     log.info("worker iniciado", extra={"coleta_no_worker": settings.coleta_no_worker})
-    scheduler.start()
+    try:
+        scheduler.start()
+    finally:
+        trava.liberar()
     log.info("worker encerrado")

@@ -602,7 +602,7 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 | D13 | Modelo multiusuário desde o MVP, UI para um usuário | Single-user puro | Retrofit de schema é caro. |
 | D14 | Uma branch (`main`) e uma imagem; deploy por ambiente fica fora do código | Branch por ambiente | Evita divergência; o que muda é configuração, não código. |
 | D15 | Manifests Kubernetes no repo separado `k8s-lab` | `k8s/` dentro deste repo | Projeto de portfólio independente; app não conhece o orquestrador. |
-| D16 | `worker` sempre com 1 réplica | Múltiplas réplicas | APScheduler duplicaria jobs; escala horizontal fica na `api`. |
+| D16 | `worker` sempre com 1 réplica, **garantida por trava no Postgres** (`pg_try_advisory_lock`) | Múltiplas réplicas; confiar só no `Recreate` do Kubernetes | APScheduler duplicaria jobs; escala horizontal fica na `api`. O `Recreate` não vale quando o pod é apagado ou despejado: o substituto sobe com o antigo ainda encerrando (visto no k8s-lab em 24/10/2026). |
 | D17 | Coleta exposta como comando CLI (`job-radar coletar <fonte>`) | Só via APScheduler | Permite CronJob no Kubernetes e execução manual/debug. |
 | D18 | No cluster, apenas providers de API | CLI dentro do container | Autenticar Claude/Codex em container expõe a assinatura e é frágil. |
 | D19 | **Telegram direto no Job Radar** (envio + botões por long polling no worker); n8n opcional, para outros canais no futuro | Telegram via n8n (D01 original) | Via n8n, os cliques precisariam voltar à API do Job Radar, exigindo que ela seja acessível pela rede do n8n (PC, cluster e EC2 têm redes diferentes). Long polling não precisa de URL pública e funciona igual em todos os ambientes; é testável sem o n8n. Revisa D01 para o Telegram. |
