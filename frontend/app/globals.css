@@ -182,3 +182,32 @@ button.activity-item { width: 100%; text-align: left; cursor: pointer; } button.
 .linha-tempo li { position: relative; margin-bottom: 12px; color: #9da3b1; font-size: 13px; }
 .linha-tempo li::before { content: ''; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #6d4bd5; }
 .linha-tempo strong { color: #d5d8e0; font-weight: 600; } .linha-tempo time { display: block; color: #6b7282; font-size: 12px; }
+
+/* ---- passo 4: fontes e providers ---- */
+.hero .outline-button { flex: 0 0 auto; }
+.cartoes-fonte { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); }
+.fonte { display: grid; gap: 12px; align-content: start; padding: 18px; }
+.fonte-off { opacity: .6; }
+.fonte-topo { display: flex; align-items: center; gap: 12px; }
+.fonte-nome { display: grid; flex: 1; gap: 3px; min-width: 0; } .fonte-nome strong { font-size: 14px; }
+.fonte-nome small { color: #7f8695; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fonte .source-badge { width: 34px; height: 34px; flex-basis: 34px; font-weight: 700; }
+.parametros { display: flex; flex-wrap: wrap; gap: 6px; }
+.parametros code, .fonte-nome code, .dica code { padding: 3px 7px; color: #c4b5fd; border-radius: 5px; background: #1b1830; font-size: 12px; }
+.fonte-ultima { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; color: #9da3b1; font-size: 12.5px; } .fonte-ultima b { color: #72e1af; font-weight: 600; }
+.fonte-erro { display: flex; gap: 6px; margin: 0; color: #fda4af; font-size: 12px; word-break: break-word; }
+.fonte .outline-button { justify-self: start; }
+.tabela-simples-rolagem { overflow-x: auto; border: 1px solid #222631; border-radius: 11px; background: #111319; }
+.tabela-simples { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tabela-simples th { padding: 10px 14px; color: #606878; background: #101217; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-align: left; text-transform: uppercase; white-space: nowrap; }
+.tabela-simples td { padding: 10px 14px; color: #c0c5ce; border-top: 1px solid #1e222b; white-space: nowrap; }
+.tabela-simples td.novas { color: #72e1af; font-weight: 600; }
+.lista-providers { display: grid; gap: 12px; }
+.provider { display: flex; gap: 16px; padding: 18px; }
+.provider-ordem { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.provider-posicao { display: grid; place-items: center; width: 30px; height: 30px; color: #e5ddff; border-radius: 8px; background: #241b42; font-weight: 700; font-size: 14px; }
+.provider-corpo { display: grid; flex: 1; gap: 12px; min-width: 0; }
+.provider-numeros { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.provider-numeros > div { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid #222631; border-radius: 9px; background: #0e1015; }
+.provider-numeros span { color: #7f8695; font-size: 12px; } .provider-numeros strong { font-size: 14px; } .provider-numeros small { color: #6b7282; font-size: 12px; }
+.teste-ok { color: #72e1af; font-size: 12.5px; } .teste-erro { color: #fda4af; font-size: 12.5px; word-break: break-word; }
