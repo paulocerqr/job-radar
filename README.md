@@ -6,7 +6,7 @@ Busca vagas de estágio/emprego em várias fontes, audita cada uma com IA de aco
 - Deploy em Kubernetes (lab na GCP): [`docs/K8S-LAB.md`](docs/K8S-LAB.md)
 - CI/CD (GitHub Actions, GHCR, fluxo de PR): [`docs/CI-CD.md`](docs/CI-CD.md)
 
-**Status:** MVP (Fase 1) funcional: coleta (Gupy, Solides, GitHub), pré-filtro, fila, auditoria por IA (Codex, Groq, NVIDIA, Gemini) e notificações no Telegram. Web UI (Fase 2) em andamento, em Next.js: login e Meu perfil.
+**Status:** MVP (Fase 1) funcional: coleta (Gupy, Solides, GitHub), pré-filtro, fila, auditoria por IA (Codex, Groq, NVIDIA, Gemini) e notificações no Telegram. Web UI (Fase 2) em Next.js: Visão geral, Vagas (com o parecer da IA e as decisões), Meu perfil. Faltam Providers e Fontes.
 
 ## Rodando com Docker Compose
 

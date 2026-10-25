@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
-  Activity, Bot, BriefcaseBusiness, CheckCircle2, LayoutDashboard, LogOut, Menu,
+  Bot, BriefcaseBusiness, LayoutDashboard, LogOut, Menu,
   SlidersHorizontal, UserRound,
 } from 'lucide-react'
 import { api, definirCsrf, type Usuario } from '@/lib/api'
@@ -17,9 +17,7 @@ type ItemMenu = { href: string; rotulo: string; Icone: LucideIcon; pronto: boole
 
 const PRINCIPAL: ItemMenu[] = [
   { href: '/', rotulo: 'Visão geral', Icone: LayoutDashboard, pronto: true },
-  { href: '/vagas/', rotulo: 'Vagas', Icone: BriefcaseBusiness, pronto: false },
-  { href: '/recomendadas/', rotulo: 'Recomendadas', Icone: CheckCircle2, pronto: false },
-  { href: '/atividade/', rotulo: 'Atividade', Icone: Activity, pronto: false },
+  { href: '/vagas/', rotulo: 'Vagas', Icone: BriefcaseBusiness, pronto: true },
 ]
 const CONFIGURACAO: ItemMenu[] = [
   { href: '/perfil/', rotulo: 'Meu perfil', Icone: UserRound, pronto: true },

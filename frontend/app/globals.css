@@ -117,3 +117,68 @@ form:has(.barra-salvar) .toast { bottom: 108px; }
 .toast { z-index: 10; }
 .topbar { gap: 16px; justify-content: flex-start; }
 .topbar .topbar-actions { margin-left: auto; }
+
+/* ---- passo 3: vagas reais. Tamanhos mínimos de 12px sobre o protótipo ---- */
+.eyebrow { font-size: 12px; }
+.hero p, .section-heading p, .panel-heading p { font-size: 13px; }
+.stat-label { font-size: 12.5px; } .stat-card small { font-size: 12px; } .stat-card strong .de { color: #6b7282; font-size: 15px; font-weight: 500; }
+.table-header { font-size: 11px; }
+.job-main strong { font-size: 13.5px; } .job-main p { font-size: 12.5px; }
+.job-location, .job-source, .job-posted { font-size: 12.5px; } .job-location small { font-size: 12px; }
+.score { font-size: 12px; } .score-none { color: #6b7282; background: #1a1d26; }
+.source-name strong, .activity-item strong { font-size: 13px; } .source-name small, .activity-item p, .activity-item time, .source-count { font-size: 12px; }
+.source-state { font-size: 11px; }
+.text-button { font-size: 13px; text-decoration: none; }
+
+.job-row.clicavel { cursor: pointer; } .job-row.clicavel:focus-visible { outline: 2px solid #6d4bd5; outline-offset: -2px; }
+.jobs-table.vazio { padding: 28px; color: #7f8695; font-size: 13px; text-align: center; }
+.company-logo { font-weight: 700; font-size: 14px; }
+a.icon-button { text-decoration: none; }
+.row-actions { align-items: center; gap: 4px; }
+.decisao { display: flex; gap: 8px; } .decisao-compacta { gap: 2px; }
+.danger-action { color: #fda4af; }
+.botao-sucesso, .botao-neutro { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.botao-sucesso { color: #d8ffe9; background: #15803d; } .botao-sucesso:hover { background: #166534; }
+.botao-neutro { color: #d5d8e0; border: 1px solid #2b2f3b; } .botao-neutro:hover { background: #1b1d27; }
+.motivos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: #8b91a1; }
+.motivos .chip { padding: 5px 10px; font-size: 12px; } .motivos .chip:hover { border-color: #6d4bd5; color: #e5ddff; }
+
+.tabs-status { flex-wrap: wrap; margin: 0 0 14px; } .tabs-status button { height: 34px; font-size: 12.5px; } .tabs-status span { font-size: 11px; }
+.toolbar .search-box { width: min(420px, 100%); } .search-box input { font-size: 13px; }
+.paginacao { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; color: #8b91a1; font-size: 13px; }
+.paginacao button:disabled { opacity: .4; cursor: default; }
+button.activity-item { width: 100%; text-align: left; cursor: pointer; } button.activity-item:hover strong { color: #e5ddff; }
+.activity-item > div:nth-child(2) { min-width: 0; } .activity-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* painel lateral da vaga */
+.painel-fundo { position: fixed; inset: 0; z-index: 20; background: #05060a99; }
+.painel { position: absolute; top: 0; right: 0; bottom: 0; width: min(560px, 100vw); overflow-y: auto; padding: 26px 26px 40px;
+  border-left: 1px solid #252936; background: #0f1116; box-shadow: -20px 0 40px #0007; }
+.painel-fechar { position: absolute; top: 16px; right: 16px; }
+.painel-topo h2 { margin: 10px 0 6px; padding-right: 30px; font-size: 20px; line-height: 1.3; }
+.painel-topo p { color: #9da3b1; font-size: 13px; } .painel-meta { margin-top: 6px; color: #6b7282 !important; font-size: 12px !important; }
+.status-tag { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600; color: #c4b5fd; background: #241b42; }
+.status-confirmada { color: #72e1af; background: #153c2e; } .status-ignorada, .status-expirada, .status-descartada { color: #9da3b1; background: #1b1d27; }
+.painel-notas { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.painel-notas > div { display: grid; gap: 4px; min-width: 110px; padding: 10px 12px; border: 1px solid #222631; border-radius: 10px; background: #111319; }
+.painel-notas span:first-child { color: #8b91a1; font-size: 12px; } .painel-notas strong { font-size: 16px; }
+.painel-acoes { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+.painel-acoes .outline-button { height: 36px; text-decoration: none; }
+.painel-secao { margin-top: 22px; padding-top: 18px; border-top: 1px solid #1e222b; }
+.painel-secao h3 { margin-bottom: 10px; font-size: 14px; }
+.parecer { color: #d5d8e0; font-size: 14px; line-height: 1.6; }
+.parecer-descarte { display: flex; gap: 7px; margin-top: 10px; color: #fda4af; font-size: 13px; line-height: 1.5; } .parecer-descarte svg { flex: 0 0 auto; margin-top: 2px; }
+.compatibilidade { display: flex; gap: 8px; margin: 12px 0; }
+.compatibilidade span { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 6px; font-size: 12px; }
+.compatibilidade .ok { color: #72e1af; background: #153c2e; } .compatibilidade .nao { color: #fda4af; background: #3a1720; }
+.lista-parecer { margin-top: 12px; } .lista-parecer h4 { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: 13px; }
+.lista-parecer ul { margin: 0; padding-left: 20px; color: #c0c5ce; font-size: 13px; line-height: 1.6; }
+.tom-ok h4 { color: #72e1af; } .tom-alerta h4 { color: #f5ca75; } .tom-erro h4 { color: #fda4af; }
+.descricao { max-height: 180px; overflow: hidden; color: #b4bac6; font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+  -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.descricao.aberta { max-height: none; -webkit-mask-image: none; mask-image: none; }
+.painel-secao .text-button { margin-top: 8px; }
+.linha-tempo { margin: 0; padding: 0 0 0 16px; border-left: 2px solid #252936; list-style: none; }
+.linha-tempo li { position: relative; margin-bottom: 12px; color: #9da3b1; font-size: 13px; }
+.linha-tempo li::before { content: ''; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #6d4bd5; }
+.linha-tempo strong { color: #d5d8e0; font-weight: 600; } .linha-tempo time { display: block; color: #6b7282; font-size: 12px; }
