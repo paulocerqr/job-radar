@@ -67,6 +67,15 @@ PERFIL_ADMIN_PADRAO = {
         # amplos: títulos de estágio raramente citam a stack (a IA refina)
         "ti", "tecnologia da informacao", "tecnologia", "software", "sistemas",
         "desenvolvimento de software", "programacao", "redes",
+        # de área: sem nenhuma no título a nota máxima é 43 (< 50 da fila); medido em 25/10
+        "machine learning", "inteligencia artificial",
+        "dados", "ciencia de dados", "engenharia de dados",
+        "desenvolvedor", "programador", "desenvolvimento de sistemas",
+        "computacao", "engenharia de software", "ciencia da computacao",
+        "suporte", "suporte tecnico", "help desk", "service desk",
+        "seguranca da informacao", "ciberseguranca",
+        "automacao", "monitoracao", "monitoramento",
+        "sql", "javascript", "typescript", "react", "api",
     ],
     "palavras_excluidas": [
         "senior", "sênior", "pleno", "especialista", "lead", "coordenador",

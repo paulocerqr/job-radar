@@ -1,10 +1,11 @@
 """Requer Postgres: defina TEST_DATABASE_URL (o CI define; localmente use o compose)."""
 
+from alembic import command
 from sqlalchemy import inspect, select
 
 from job_radar.config import get_settings
-from job_radar.db import get_engine, nova_sessao
-from job_radar.models import Base, Usuario
+from job_radar.db import alembic_config, get_engine, nova_sessao
+from job_radar.models import Base, Perfil, Usuario
 from job_radar.seed import FONTES_PADRAO, executar_seed
 
 
@@ -31,3 +32,19 @@ def test_seed_idempotente(banco_migrado, monkeypatch):
     assert primeira.admin_criado
     assert segunda.fontes_criadas == 0
     assert not segunda.admin_criado
+
+
+def test_migracao_acrescenta_palavras_de_area_sem_duplicar(banco_com_seed):
+    cfg = alembic_config()
+    command.downgrade(cfg, "a7c3e91d4b20")
+    with nova_sessao() as sessao:
+        perfil = sessao.scalars(select(Perfil)).one()
+        perfil.palavras_chave = ["devops", "dados"]  # "dados" já existe: não duplica
+        sessao.commit()
+
+    command.upgrade(cfg, "head")
+    with nova_sessao() as sessao:
+        palavras = sessao.scalars(select(Perfil)).one().palavras_chave
+    assert palavras[:3] == ["devops", "dados", "machine learning"]
+    assert palavras.count("dados") == 1
+    assert "suporte" in palavras
