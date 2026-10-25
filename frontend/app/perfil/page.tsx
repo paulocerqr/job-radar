@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, FlaskConical, Info, Save } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
+import { CartaoTelegram } from '@/components/Telegram'
 import { api, ErroApi } from '@/lib/api'
 
 type Perfil = {
@@ -199,6 +200,8 @@ function MeuPerfil() {
           <ErroCampo erros={erros} campo="curriculo_md" />
         </label>
       </section>
+
+      <CartaoTelegram />
 
       <div className="barra-salvar">
         <label className="interruptor">

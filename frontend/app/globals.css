@@ -68,7 +68,7 @@ a.nav-item { text-decoration: none; }
 .campo { display: grid; gap: 7px; margin: 0 0 16px; padding: 0; border: 0; color: #d5d8e0; font-size: 13px; font-weight: 600; }
 .campo legend { margin-bottom: 8px; padding: 0; }
 .campo small { color: #737b8c; font-size: 12px; font-weight: 400; }
-.campo input[type=email], .campo input[type=password], .campo input[type=number], .campo textarea {
+.campo input:not([type]), .campo input[type=text], .campo input[type=email], .campo input[type=password], .campo input[type=number], .campo textarea {
   width: 100%; padding: 9px 11px; color: #e4e6eb; border: 1px solid #292d38; border-radius: 8px; background: #0e1015;
   font-size: 13px; font-weight: 400; line-height: 1.5; outline: none; resize: vertical;
 }
@@ -211,3 +211,17 @@ button.activity-item { width: 100%; text-align: left; cursor: pointer; } button.
 .provider-numeros > div { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid #222631; border-radius: 9px; background: #0e1015; }
 .provider-numeros span { color: #7f8695; font-size: 12px; } .provider-numeros strong { font-size: 14px; } .provider-numeros small { color: #6b7282; font-size: 12px; }
 .teste-ok { color: #72e1af; font-size: 12.5px; } .teste-erro { color: #fda4af; font-size: 12.5px; word-break: break-word; }
+
+/* ---- usuários e convites ---- */
+.convite-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.convite-form .campo { flex: 1 1 280px; margin: 0; }
+.link-convite { margin-top: 16px; padding: 14px; border: 1px solid #3b2f6b; border-radius: 10px; background: #17132a; }
+.link-convite p { margin: 0 0 10px; color: #c8b9fc; font-size: 13px; }
+.link-linha { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.link-linha code { flex: 1 1 300px; overflow-wrap: anywhere; padding: 8px 10px; color: #e5ddff; border-radius: 7px; background: #0e1015; font-size: 12px; }
+.source-state.pendente { color: #c4b5fd; background: #2d2251; }
+.voce { color: #7f8695; font-size: 12px; }
+.telegram-status { display: flex; gap: 8px; align-items: center; margin: 0 0 14px; font-size: 13px; color: #9da3b1; }
+.telegram-vinculado { color: #72e1af; } .telegram-aguardando { color: #f5ca75; }
+.login-cartao form .botao-primario { width: 100%; margin-top: 6px; }
+.login-cartao .text-button { margin-top: 10px; }
