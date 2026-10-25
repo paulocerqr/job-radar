@@ -98,3 +98,23 @@ def test_vaga_antiga_perde_pontos_de_recencia():
     nova = avaliar(Vaga(), Perfil(), 80, AGORA).score
     antiga = avaliar(Vaga(publicada_em=AGORA - timedelta(days=30)), Perfil(), 80, AGORA).score
     assert antiga == nova - 15
+
+
+def test_perfil_padrao_leva_titulos_de_area_para_a_fila():
+    from job_radar.fila.alimentador import SCORE_MINIMO_FILA
+    from job_radar.seed import PERFIL_ADMIN_PADRAO
+
+    perfil = Perfil(**{k: PERFIL_ADMIN_PADRAO[k] for k in ("palavras_chave", "palavras_excluidas")})
+    # títulos reais de 25/10 que, sem palavra-chave no título, ficavam com nota < 50
+    for titulo in ("Estágio em Machine Learning", "Estagiário(a) de Suporte"):
+        vaga = Vaga(titulo=titulo, descricao=None, modalidade=Modalidade.HIBRIDO)
+        resultado = avaliar(vaga, perfil, confiabilidade_fonte=80, agora=AGORA)
+        assert resultado.score >= SCORE_MINIMO_FILA, titulo
+
+
+def test_desenvolvimento_de_negocios_nao_vira_palavra_chave():
+    from job_radar.seed import PERFIL_ADMIN_PADRAO
+
+    perfil = Perfil(palavras_chave=PERFIL_ADMIN_PADRAO["palavras_chave"])
+    vaga = Vaga(titulo="Estágio em Desenvolvimento de Negócios", descricao=None)
+    assert not avaliar(vaga, perfil, confiabilidade_fonte=80, agora=AGORA).aprovada
