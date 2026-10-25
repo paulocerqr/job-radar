@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from sqlalchemy import CheckConstraint, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -73,3 +74,21 @@ class CanalNotificacao(ComUUID, ComCriadoEm, Base):
     token_vinculo: Mapped[str | None] = mapped_column(unique=True)  # /start <token>
     verificado: Mapped[bool] = mapped_column(default=False, server_default="false")
     ativo: Mapped[bool] = mapped_column(default=True, server_default="true")
+
+
+class Convite(ComUUID, ComCriadoEm, Base):
+    """Convite de cadastro (Fase 3): link de uso único. Só o hash do token fica no banco."""
+
+    __tablename__ = "convite"
+
+    token_hash: Mapped[str] = mapped_column(unique=True)  # sha256 hex do token do link
+    email: Mapped[str]  # o cadastro só aceita este e-mail
+    criado_por: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("usuario.id", ondelete="SET NULL")
+    )
+    expira_em: Mapped[datetime]
+    usado_em: Mapped[datetime | None]
+    usuario_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("usuario.id", ondelete="SET NULL")
+    )  # quem se cadastrou com ele
+    revogado_em: Mapped[datetime | None]

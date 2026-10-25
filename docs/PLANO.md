@@ -661,8 +661,8 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 - [x] Fontes e coleta: última execução por fonte, execuções recentes, ativar/desativar (o CronJob respeita), coletar agora (admin).
 
 ### Fase 3 — Multiusuário
-- [ ] Cadastro de usuários (convite).
-- [ ] Vínculo Telegram via `/start <token>`.
+- [x] Cadastro de usuários por convite: link de uso único (7 dias, só o hash no banco), tela Usuários para o admin, ativar/desativar. Convidado sem provider próprio usa a cascata do admin (decisão de 26/10/2026).
+- [x] Vínculo Telegram via `/start <token>`, também pela Web UI (Meu perfil).
 - [ ] Round-robin no auditor; limites por usuário.
 - [ ] Restrição de provider `cli` a admin.
 

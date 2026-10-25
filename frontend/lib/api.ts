@@ -1,7 +1,7 @@
 // Cliente da API JSON do Job Radar (mesma origem: o cookie da sessão vai sozinho).
 // Escritas levam o token CSRF da sessão no cabeçalho X-CSRF-Token.
 
-export type Usuario = { nome: string; email: string }
+export type Usuario = { nome: string; email: string; papel: 'admin' | 'usuario' }
 
 export class ErroApi extends Error {
   constructor(public status: number, public corpo: Record<string, unknown>) {

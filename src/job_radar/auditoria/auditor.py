@@ -55,15 +55,33 @@ class ResumoAuditoria:
         self.adiadas += outro.adiadas
 
 
+def _ativos_de(sessao: Session, usuario_id) -> list[ProviderIA]:
+    return list(
+        sessao.scalars(
+            select(ProviderIA)
+            .where(ProviderIA.usuario_id == usuario_id, ProviderIA.ativo)
+            .order_by(ProviderIA.prioridade)
+        )
+    )
+
+
 def providers_do_usuario(sessao: Session, usuario: Usuario) -> list[ProviderIA]:
-    providers = sessao.scalars(
-        select(ProviderIA)
-        .where(ProviderIA.usuario_id == usuario.id, ProviderIA.ativo)
-        .order_by(ProviderIA.prioridade)
-    ).all()
+    """Os providers do próprio usuário; sem nenhum ativo, os do admin (convidados).
+
+    Os limites (rpm/rpd) contam por provider, então quem usa os do admin divide a cota.
+    """
+    providers = _ativos_de(sessao, usuario.id)
+    if not providers and usuario.papel != Papel.ADMIN:
+        admin = sessao.scalar(
+            select(Usuario.id)
+            .where(Usuario.papel == Papel.ADMIN, Usuario.ativo)
+            .order_by(Usuario.criado_em)
+            .limit(1)
+        )
+        providers = _ativos_de(sessao, admin) if admin else []
     if usuario.papel != Papel.ADMIN:  # RN22
         return [p for p in providers if p.tipo != TipoProvider.CLI]
-    return list(providers)
+    return providers
 
 
 def selecionar_lote(

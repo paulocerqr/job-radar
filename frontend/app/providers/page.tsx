@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowDown, ArrowUp, CheckCircle2, Info, PlugZap, TriangleAlert } from 'lucide-react'
-import { AppShell } from '@/components/AppShell'
+import { AppShell, useUsuario } from '@/components/AppShell'
 import { api, ErroApi } from '@/lib/api'
 import { tempoRelativo } from '@/lib/vagas'
 
@@ -17,6 +17,7 @@ type Teste = { ok: boolean; segundos?: number; modelo?: string; erro?: string }
 const milhar = (n: number) => n.toLocaleString('pt-BR')
 
 function Providers() {
+  const eu = useUsuario()
   const [lista, setLista] = useState<Provider[] | null>(null)
   const [testes, setTestes] = useState<Record<string, Teste | 'testando'>>({})
   const [toast, setToast] = useState('')
@@ -65,7 +66,7 @@ function Providers() {
     <>
       <section className="hero"><div><h1>Providers de IA</h1><p>Quem audita as vagas. Em caso de erro ou limite, a auditoria passa para o próximo da lista.</p></div></section>
       <p className="dica"><Info size={15} /><span>Cadastrar um provider ou trocar a chave continua pelo terminal (<code>job-radar provider adicionar</code>): a chave é cifrada no banco e nunca volta para o navegador.</span></p>
-      {lista.length === 0 && <div className="jobs-table vazio">Nenhum provider cadastrado.</div>}
+      {lista.length === 0 && <div className="jobs-table vazio">{eu?.papel === 'admin' ? 'Nenhum provider cadastrado.' : 'Você não tem providers próprios: suas vagas são auditadas pela cascata do admin.'}</div>}
       <div className="lista-providers">
         {lista.map((p, i) => {
           const teste = testes[p.id]

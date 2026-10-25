@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
-  Bot, BriefcaseBusiness, LayoutDashboard, LogOut, Menu,
+  Bot, BriefcaseBusiness, LayoutDashboard, LogOut, Menu, Users,
   SlidersHorizontal, UserRound,
 } from 'lucide-react'
 import { api, definirCsrf, type Usuario } from '@/lib/api'
@@ -13,7 +13,7 @@ import { api, definirCsrf, type Usuario } from '@/lib/api'
 const ContextoUsuario = createContext<Usuario | null>(null)
 export const useUsuario = () => useContext(ContextoUsuario)
 
-type ItemMenu = { href: string; rotulo: string; Icone: LucideIcon; pronto: boolean }
+type ItemMenu = { href: string; rotulo: string; Icone: LucideIcon; pronto: boolean; soAdmin?: boolean }
 
 const PRINCIPAL: ItemMenu[] = [
   { href: '/', rotulo: 'Visão geral', Icone: LayoutDashboard, pronto: true },
@@ -23,6 +23,7 @@ const CONFIGURACAO: ItemMenu[] = [
   { href: '/perfil/', rotulo: 'Meu perfil', Icone: UserRound, pronto: true },
   { href: '/providers/', rotulo: 'Providers de IA', Icone: Bot, pronto: true },
   { href: '/fontes/', rotulo: 'Fontes e coleta', Icone: SlidersHorizontal, pronto: true },
+  { href: '/usuarios/', rotulo: 'Usuários', Icone: Users, pronto: true, soAdmin: true },
 ]
 
 function iniciais(nome: string) {
@@ -78,7 +79,7 @@ export function AppShell({ titulo, children }: { titulo: string; children: React
           <nav className="main-nav">{PRINCIPAL.map((item) => <Item key={item.href} item={item} ativo={ativo(item.href)} aberto={aberto} />)}</nav>
           <div className="sidebar-section">
             {aberto && <div className="section-label">CONFIGURAÇÃO</div>}
-            {CONFIGURACAO.map((item) => <Item key={item.href} item={item} ativo={ativo(item.href)} aberto={aberto} />)}
+            {CONFIGURACAO.filter((item) => !item.soAdmin || usuario.papel === 'admin').map((item) => <Item key={item.href} item={item} ativo={ativo(item.href)} aberto={aberto} />)}
           </div>
           <div className="sidebar-bottom">
             <button className="nav-item" onClick={sair} title="Sair"><LogOut size={18} />{aberto && <span>Sair</span>}</button>

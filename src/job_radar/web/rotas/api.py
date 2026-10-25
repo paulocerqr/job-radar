@@ -28,7 +28,7 @@ ComCsrf = [Depends(exigir_csrf)]
 
 
 def _usuario_json(usuario: Usuario) -> dict:
-    return {"nome": usuario.nome, "email": usuario.email}
+    return {"nome": usuario.nome, "email": usuario.email, "papel": usuario.papel}
 
 
 @router.get("/sessao")
