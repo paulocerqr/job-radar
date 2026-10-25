@@ -16,14 +16,15 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import distinct_on
 
-from job_radar.auditoria.providers import construir_provider
+from job_radar.auditoria.providers import ProviderOpenAICompativel, construir_provider
 from job_radar.auditoria.providers.base import ErroProvider, RespostaInvalida, extrair_json
 from job_radar.coleta.base import fontes_registradas
 from job_radar.coleta.execucao import executar_coleta
 from job_radar.db import nova_sessao
 from job_radar.models import ExecucaoColeta, Fonte, ProviderIA, UsoProvider, Usuario
-from job_radar.models.enums import Papel, StatusExecucao
-from job_radar.seguranca.cripto import ChaveFernetAusente, ChaveFernetInvalida
+from job_radar.models.enums import Papel, StatusExecucao, TipoProvider
+from job_radar.seguranca.cripto import ChaveFernetAusente, ChaveFernetInvalida, cifrar, mascarar
+from job_radar.web import providers_web
 from job_radar.web.sessao import SessaoDB, UsuarioLogado, exigir_csrf
 
 log = logging.getLogger(__name__)
@@ -232,22 +233,105 @@ def testar_provider(
     )
 
 
+@router.get("/providers/presets")
+def presets(usuario: UsuarioLogado) -> dict:
+    return {
+        "presets": {
+            nome: {"base_url": p.base_url, "modelo": p.modelo, "rpm": p.rpm, "rpd": p.rpd,
+                   "tamanho_lote": p.tamanho_lote, "timeout_s": p.timeout_s}
+            for nome, p in providers_web.PRESETS_WEB.items()
+        }
+    }  # fmt: skip
+
+
+@router.post("/providers", dependencies=ComCsrf)
+def criar_provider(
+    corpo: Annotated[dict[str, Any], Body()], usuario: UsuarioLogado, sessao: SessaoDB
+) -> JSONResponse:
+    campos, erros = providers_web.validar(corpo, novo=True)
+    if not erros and sessao.scalar(
+        select(ProviderIA.id).where(
+            ProviderIA.usuario_id == usuario.id, ProviderIA.nome == campos["nome"]
+        )
+    ):
+        erros["nome"] = "Você já tem um provider com esse nome"
+    if erros:
+        return JSONResponse({"erros": erros}, 422)
+    chave = campos.pop("api_key")
+    try:
+        cifrada = cifrar(chave)
+    except ChaveFernetAusente:
+        return JSONResponse({"erro": "FERNET_KEY não configurada no servidor"}, 409)
+    maior = sessao.scalar(
+        select(func.max(ProviderIA.prioridade)).where(ProviderIA.usuario_id == usuario.id)
+    )
+    provider = ProviderIA(
+        usuario_id=usuario.id, tipo=TipoProvider.OPENAI_COMPATIBLE, prioridade=(maior or 0) + 1,
+        api_key_cifrada=cifrada, api_key_sufixo=mascarar(chave), **campos,
+    )  # fmt: skip
+    sessao.add(provider)
+    sessao.commit()
+    log.info("provider criado", extra={"provider": str(provider.id), "usuario": str(usuario.id)})
+    return JSONResponse({"id": str(provider.id)}, 201)
+
+
 @router.patch("/providers/{provider_id}", dependencies=ComCsrf)
 def alterar_provider(
     provider_id: uuid.UUID, corpo: Annotated[dict[str, Any], Body()], usuario: UsuarioLogado,
     sessao: SessaoDB,
 ) -> JSONResponse:  # fmt: skip
+    """Ativar/desativar e editar modelo, URL, limites ou trocar a chave (sem reenviar a antiga)."""
     config = _do_usuario(sessao, usuario, provider_id)
     if config is None:
         return JSONResponse({"erro": "provider não encontrado"}, 404)
-    if not isinstance(corpo.get("ativo"), bool):
-        return JSONResponse({"erro": "informe ativo: true ou false"}, 422)
-    config.ativo = corpo["ativo"]
-    if config.ativo:  # reativar dá uma nova chance: limpa o erro antigo
+    if "ativo" in corpo and not isinstance(corpo["ativo"], bool):
+        return JSONResponse({"erros": {"ativo": "true ou false"}}, 422)
+    if config.tipo == TipoProvider.CLI and set(corpo) - {"ativo"}:
+        return JSONResponse({"erro": "provider CLI só é editado pelo terminal"}, 409)
+    campos, erros = providers_web.validar(corpo, novo=False)
+    if erros:
+        return JSONResponse({"erros": erros}, 422)
+    if chave := campos.pop("api_key", None):
+        config.api_key_cifrada, config.api_key_sufixo = cifrar(chave), mascarar(chave)
+    for campo, valor in campos.items():
+        setattr(config, campo, valor)
+    if "ativo" in corpo:
+        config.ativo = corpo["ativo"]
+    if campos or chave or config.ativo:  # mudou algo ou reativou: nova chance
         config.ultimo_erro = None
         config.ultimo_erro_em = None
     sessao.commit()
     return JSONResponse({"id": str(config.id), "ativo": config.ativo})
+
+
+@router.delete("/providers/{provider_id}", dependencies=ComCsrf)
+def remover_provider(
+    provider_id: uuid.UUID, usuario: UsuarioLogado, sessao: SessaoDB
+) -> JSONResponse:
+    config = _do_usuario(sessao, usuario, provider_id)
+    if config is None:
+        return JSONResponse({"erro": "provider não encontrado"}, 404)
+    sessao.delete(config)
+    sessao.commit()
+    log.info("provider removido", extra={"provider": str(provider_id), "usuario": str(usuario.id)})
+    return JSONResponse({"ok": True})
+
+
+@router.get("/providers/{provider_id}/modelos")
+def modelos_provider(
+    provider_id: uuid.UUID, usuario: UsuarioLogado, sessao: SessaoDB
+) -> JSONResponse:
+    """Modelos disponíveis para a chave salva (endpoint /models do provider)."""
+    config = _do_usuario(sessao, usuario, provider_id)
+    if config is None or config.tipo != TipoProvider.OPENAI_COMPATIBLE:
+        return JSONResponse({"erro": "provider não encontrado"}, 404)
+    try:
+        provider = construir_provider(config)
+        if not isinstance(provider, ProviderOpenAICompativel):
+            return JSONResponse({"erro": "provider sem lista de modelos"}, 409)
+        return JSONResponse({"modelos": sorted(provider.listar_modelos())})
+    except (ErroProvider, ChaveFernetAusente, ChaveFernetInvalida) as erro:
+        return JSONResponse({"erro": str(erro)[:300]}, 502)
 
 
 @router.put("/providers/ordem", dependencies=ComCsrf)

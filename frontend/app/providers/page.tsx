@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowDown, ArrowUp, CheckCircle2, Info, PlugZap, TriangleAlert } from 'lucide-react'
+import { ArrowDown, ArrowUp, CheckCircle2, Pencil, PlugZap, Plus, TriangleAlert } from 'lucide-react'
+import { FormProvider } from '@/components/FormProvider'
 import { AppShell, useUsuario } from '@/components/AppShell'
 import { api, ErroApi } from '@/lib/api'
 import { tempoRelativo } from '@/lib/vagas'
@@ -21,6 +22,8 @@ function Providers() {
   const [lista, setLista] = useState<Provider[] | null>(null)
   const [testes, setTestes] = useState<Record<string, Teste | 'testando'>>({})
   const [toast, setToast] = useState('')
+  const [adicionando, setAdicionando] = useState(false)
+  const [editando, setEditando] = useState<string | null>(null)
 
   const carregar = useCallback(() => api<{ providers: Provider[] }>('/providers').then((r) => setLista(r.providers)), [])
   useEffect(() => { carregar() }, [carregar])
@@ -64,9 +67,17 @@ function Providers() {
 
   return (
     <>
-      <section className="hero"><div><h1>Providers de IA</h1><p>Quem audita as vagas. Em caso de erro ou limite, a auditoria passa para o próximo da lista.</p></div></section>
-      <p className="dica"><Info size={15} /><span>Cadastrar um provider ou trocar a chave continua pelo terminal (<code>job-radar provider adicionar</code>): a chave é cifrada no banco e nunca volta para o navegador.</span></p>
-      {lista.length === 0 && <div className="jobs-table vazio">{eu?.papel === 'admin' ? 'Nenhum provider cadastrado.' : 'Você não tem providers próprios: suas vagas são auditadas pela cascata do admin.'}</div>}
+      <section className="hero">
+        <div><h1>Providers de IA</h1><p>Quem audita as vagas. Em caso de erro ou limite, a auditoria passa para o próximo da lista.</p></div>
+        {!adicionando && <button className="outline-button" onClick={() => setAdicionando(true)}><Plus size={15} /> Adicionar provider</button>}
+      </section>
+      {adicionando && (
+        <section className="panel bloco">
+          <div className="panel-heading"><div><h3>Novo provider</h3><p>Qualquer API compatível com a da OpenAI (Groq, NVIDIA, Gemini, OpenRouter…). Entra no fim da fila.</p></div></div>
+          <FormProvider aoCancelar={() => setAdicionando(false)} aoSalvar={(m) => { setAdicionando(false); avisar(m); carregar() }} />
+        </section>
+      )}
+      {lista.length === 0 && <div className="jobs-table vazio">{eu?.papel === 'admin' ? 'Nenhum provider cadastrado.' : 'Você não tem providers próprios: suas vagas são auditadas pela cascata do admin. Cadastre um para usar a sua própria chave.'}</div>}
       <div className="lista-providers">
         {lista.map((p, i) => {
           const teste = testes[p.id]
@@ -91,10 +102,14 @@ function Providers() {
                 {p.ultimo_erro && <p className="fonte-erro"><TriangleAlert size={14} /> {tempoRelativo(p.ultimo_erro_em)}: {p.ultimo_erro.slice(0, 240)}</p>}
                 <div className="acoes-linha">
                   <button className="outline-button" disabled={teste === 'testando'} onClick={() => testar(p)}><PlugZap size={14} /> {teste === 'testando' ? 'Testando…' : 'Testar conexão'}</button>
+                  {p.tipo !== 'cli' && editando !== p.id && <button className="outline-button" onClick={() => setEditando(p.id)}><Pencil size={14} /> Editar</button>}
                   {teste && teste !== 'testando' && (
                     <span className={teste.ok ? 'teste-ok' : 'teste-erro'}>{teste.ok ? `OK em ${teste.segundos} s (${teste.modelo})` : teste.erro}</span>
                   )}
                 </div>
+                {editando === p.id && (
+                  <FormProvider inicial={{ ...p, base_url: p.base_url ?? "" }} aoCancelar={() => setEditando(null)} aoSalvar={(m) => { setEditando(null); avisar(m); carregar() }} />
+                )}
               </div>
             </section>
           )
