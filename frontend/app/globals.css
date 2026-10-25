@@ -225,3 +225,11 @@ button.activity-item { width: 100%; text-align: left; cursor: pointer; } button.
 .telegram-vinculado { color: #72e1af; } .telegram-aguardando { color: #f5ca75; }
 .login-cartao form .botao-primario { width: 100%; margin-top: 6px; }
 .login-cartao .text-button { margin-top: 10px; }
+
+/* ---- cadastro e edição de providers ---- */
+.form-provider { display: grid; gap: 4px; padding-top: 14px; border-top: 1px dashed #2b2f3b; }
+.panel.bloco > .form-provider { padding-top: 0; border-top: 0; }
+.grade-4 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.botao-neutro.perigo { margin-left: auto; color: #fda4af; border-color: #5a2230; } .botao-neutro.perigo:hover { background: #2a1219; }
+.form-provider button.chip { cursor: pointer; }
+.campo { align-content: start; }
