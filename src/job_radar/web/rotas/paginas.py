@@ -42,11 +42,6 @@ def _pagina(request: Request, nome: str, status_code: int = 200, **contexto) -> 
     )
 
 
-@router.get("/", include_in_schema=False)
-def inicio() -> RedirectResponse:
-    return RedirectResponse("/perfil", status_code=303)
-
-
 @router.get("/login", response_class=HTMLResponse, include_in_schema=False)
 def login_form(request: Request) -> HTMLResponse:
     return _pagina(request, "login.html")

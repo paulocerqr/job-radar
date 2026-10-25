@@ -596,7 +596,7 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 | D07 | Dois adaptadores de IA (`cli`, `openai_compatible`) | SDK por provider | Cobre Groq/NVIDIA/Gemini/OpenRouter com um código. |
 | D08 | CLI (Claude/Codex) restrito ao admin | Compartilhar com todos | Usa a assinatura do admin; termos de uso. |
 | D09 | BYOK para usuários, chaves com Fernet | Chave central | Custo distribuído; isolamento de limites. |
-| D10 | UI com Jinja2 + HTMX | React/Vue SPA | Sem build de frontend; leve. |
+| D10 | UI em Next.js (exportação estática) servida pela API; revisa a escolha inicial de Jinja2 + HTMX (25/10/2026) | Jinja2 + HTMX; servidor Next | Visual feito no v0.dev em Next; o export estático mantém um só container e o Node só no build. CSP com hash dos scripts inline. |
 | D11 | Fontes iniciais: Gupy, GitHub, Greenhouse/Lever | LinkedIn primeiro | Baixo risco de bloqueio/ToS. |
 | D12 | Sem candidatura automática | Auto-apply | Controle do usuário; qualidade. |
 | D13 | Modelo multiusuário desde o MVP, UI para um usuário | Single-user puro | Retrofit de schema é caro. |

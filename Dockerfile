@@ -1,5 +1,16 @@
 # syntax=docker/dockerfile:1
 
+# Frontend (Next.js, exportação estática): o Node só existe neste estágio
+FROM node:24-slim AS frontend
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
+WORKDIR /frontend
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY frontend/ ./
+RUN pnpm typecheck && pnpm build
+
+
 FROM python:3.12-slim-bookworm AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /usr/local/bin/uv
 
@@ -24,6 +35,7 @@ RUN groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid app --no-create-home app
 
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
+COPY --from=frontend --chown=app:app /frontend/out /app/frontend
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
