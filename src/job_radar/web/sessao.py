@@ -57,15 +57,20 @@ def token_csrf(request: Request) -> str:
     return token
 
 
-async def exigir_csrf(request: Request) -> None:
-    """Formulários mandam o campo `csrf`; o HTMX manda o cabeçalho X-CSRF-Token."""
+def exigir_json(request: Request) -> None:
+    """Formulário de outro site não consegue mandar JSON sem preflight de CORS (que a API
+    não libera): exigir o Content-Type já barra CSRF por formulário."""
+    tipo = request.headers.get("content-type", "").split(";")[0].strip()
+    if tipo != "application/json":
+        raise CsrfInvalido
+
+
+def exigir_csrf(request: Request) -> None:
+    """Toda escrita autenticada: JSON + cabeçalho X-CSRF-Token igual ao da sessão."""
+    exigir_json(request)
     esperado = request.session.get("csrf")
     recebido = request.headers.get("x-csrf-token")
-    if recebido is None:
-        recebido = (await request.form()).get("csrf")
-    if not esperado or not isinstance(recebido, str):
-        raise CsrfInvalido
-    if not secrets.compare_digest(esperado, recebido):
+    if not esperado or not recebido or not secrets.compare_digest(esperado, recebido):
         raise CsrfInvalido
 
 

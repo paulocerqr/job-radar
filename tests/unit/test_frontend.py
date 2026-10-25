@@ -38,10 +38,11 @@ def test_api_serve_frontend_com_csp_por_hash(tmp_path, monkeypatch):
     estatico = cliente.get("/_next/static/chunks/app.js")
     assert "immutable" in estatico.headers["cache-control"]
 
-    # rotas da API e páginas Jinja continuam com prioridade e CSP estrita
+    # rotas da API continuam com prioridade e CSP estrita
     assert cliente.get("/healthz").json() == {"status": "ok"}
-    login = cliente.get("/login")
-    assert "'sha256-" not in login.headers["content-security-policy"]
+    api = cliente.get("/api/sessao")
+    assert api.status_code == 401
+    assert "'sha256-" not in api.headers["content-security-policy"]
 
 
 def test_sem_build_do_frontend_nada_e_montado():
