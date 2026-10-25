@@ -654,7 +654,7 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 **Critério de pronto:** às 08:00 o sistema coleta, e ao longo do dia recomendadas chegam no Telegram; confirmar/ignorar pelo Telegram altera o estado.
 
 ### Fase 2 — Web UI
-- [x] Login (admin): sessão em cookie assinado, CSRF, bloqueio após 5 falhas, CSP sem nada inline.
+- [x] Login (admin): sessão em cookie assinado, escrita só com JSON + X-CSRF-Token, bloqueio após 5 falhas, CSP com hash dos scripts.
 - [ ] Listagem por estado, detalhe da auditoria, ações.
 - [x] Edição de perfil e currículo (Perfil & Regras), com simulação do pré-filtro, recálculo do pool e instruções livres para a IA (prompt v2).
 - [ ] Cadastro de providers (teste de conexão, chave mascarada).

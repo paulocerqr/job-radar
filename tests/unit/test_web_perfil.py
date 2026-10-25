@@ -1,59 +1,52 @@
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
-from starlette.datastructures import FormData
 
 from job_radar.auditoria.prompt import VERSAO_PROMPT, montar_prompt
 from job_radar.config import Settings
 from job_radar.models import Perfil
 from job_radar.web.app import create_app
-from job_radar.web.formulario_perfil import ler_formulario, lista_de_termos
+from job_radar.web.perfil_json import lista_de_termos, para_json, validar
 from job_radar.web.sessao import BLOQUEIO_S, MAX_FALHAS, LimiteLogin, chave_sessao
 
 
-def formulario(**valores) -> FormData:
+def corpo(**valores) -> dict:
     padrao = {
-        "palavras_chave": "devops\nsuporte",
-        "palavras_excluidas": "senior",
+        "palavras_chave": ["devops", "suporte"],
+        "palavras_excluidas": ["senior"],
         "niveis": ["estagio"],
-        "localidades": "Brasília/DF",
-        "aceita_remoto": "on",
-        "score_minimo": "60",
-        "ttl_pool_dias": "7",
-        "ttl_recomendada_dias": "14",
+        "localidades": ["Brasília/DF"],
+        "aceita_remoto": True,
+        "score_minimo": 60,
+        "ttl_pool_dias": 7,
+        "ttl_recomendada_dias": 14,
         "curriculo_md": "# CV",
         "instrucoes_ia": "",
     }
-    padrao.update(valores)
-    itens = []
-    for chave, valor in padrao.items():
-        for v in valor if isinstance(valor, list) else [valor]:
-            itens.append((chave, v))
-    return FormData(itens)
+    return {**padrao, **valores}
 
 
-def test_lista_de_termos_aceita_linhas_e_virgulas_sem_repetir():
-    assert lista_de_termos("devops, Cloud\n\n  machine   learning \ncloud;sre") == [
-        "devops", "Cloud", "machine learning", "sre",
+def test_lista_de_termos_sem_vazios_nem_repeticao():
+    assert lista_de_termos(["devops", " Cloud ", "", "machine   learning", "cloud"]) == [
+        "devops", "Cloud", "machine learning",
     ]  # fmt: skip
+    assert lista_de_termos("não é lista") == []
 
 
-def test_formulario_valido():
-    dados = ler_formulario(formulario(localidades="Brasília/DF\nGO"))
+def test_perfil_valido_e_ida_e_volta_das_localidades():
+    dados = validar(corpo(localidades=["Brasília/DF", "GO"]))
     assert not dados.erros
-    assert dados.palavras_chave == ["devops", "suporte"]
     assert dados.localidades == [{"cidade": "Brasília", "uf": "DF"}, {"uf": "GO"}]
-    assert dados.aceita_remoto is True
-    assert dados.niveis == ["estagio"]
+    assert para_json(dados)["localidades"] == ["Brasília/DF", "GO"]
 
 
-def test_formulario_com_erros():
-    dados = ler_formulario(
-        formulario(
-            palavras_chave=" \n ",
-            localidades="Brasília/XX",
-            score_minimo="150",
+def test_perfil_com_erros():
+    dados = validar(
+        corpo(
+            palavras_chave=[" "],
+            localidades=["Brasília/XX"],
+            score_minimo=150,
             niveis=["desconhecido"],
-            aceita_remoto="",
+            aceita_remoto="sim",  # só true de verdade conta
         )
     )
     assert set(dados.erros) == {"palavras_chave", "localidades", "score_minimo", "niveis"}
@@ -80,27 +73,17 @@ def test_chave_de_sessao_derivada_da_fernet_e_diferente_dela():
     assert chave_sessao(Settings(database_url="x", sessao_secret=SecretStr("s"))) == "s"
 
 
-def test_sem_sessao_redireciona_para_login():
-    resposta = TestClient(create_app()).get("/perfil", follow_redirects=False)
-    assert resposta.status_code == 303
-    assert resposta.headers["location"] == "/login"
-
-
-def test_htmx_sem_sessao_recebe_hx_redirect():
-    cliente = TestClient(create_app())
-    cliente.get("/login")  # cria o token CSRF na sessão
-    resposta = cliente.get("/perfil", headers={"HX-Request": "true"}, follow_redirects=False)
+def test_api_sem_sessao_responde_401():
+    resposta = TestClient(create_app()).get("/api/perfil")
     assert resposta.status_code == 401
-    assert resposta.headers["hx-redirect"] == "/login"
+    assert resposta.headers["content-security-policy"].startswith("default-src 'none'")
 
 
-def test_login_sem_csrf_recusado_e_pagina_com_csp():
+def test_escrita_exige_json_e_token():
     cliente = TestClient(create_app())
-    pagina = cliente.get("/login")
-    assert "script-src 'self'" in pagina.headers["content-security-policy"]
-    assert 'name="csrf"' in pagina.text
-    resposta = cliente.post("/login", data={"email": "a@b.c", "senha": "x"})
-    assert resposta.status_code == 403
+    # formulário (o que outro site conseguiria mandar) é recusado antes de qualquer coisa
+    assert cliente.post("/api/login", data={"email": "a@b.c", "senha": "x"}).status_code == 403
+    assert cliente.post("/api/sair", json={}).status_code == 403  # JSON sem X-CSRF-Token
 
 
 def test_prompt_leva_as_instrucoes_do_candidato():

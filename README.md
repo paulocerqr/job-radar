@@ -6,7 +6,7 @@ Busca vagas de estágio/emprego em várias fontes, audita cada uma com IA de aco
 - Deploy em Kubernetes (lab na GCP): [`docs/K8S-LAB.md`](docs/K8S-LAB.md)
 - CI/CD (GitHub Actions, GHCR, fluxo de PR): [`docs/CI-CD.md`](docs/CI-CD.md)
 
-**Status:** MVP (Fase 1) funcional: coleta (Gupy, Solides, GitHub), pré-filtro, fila, auditoria por IA (Codex, Groq, NVIDIA, Gemini) e notificações no Telegram. Web UI (Fase 2) em andamento: login e Perfil & Regras.
+**Status:** MVP (Fase 1) funcional: coleta (Gupy, Solides, GitHub), pré-filtro, fila, auditoria por IA (Codex, Groq, NVIDIA, Gemini) e notificações no Telegram. Web UI (Fase 2) em andamento, em Next.js: login e Meu perfil.
 
 ## Rodando com Docker Compose
 
@@ -114,6 +114,8 @@ pnpm dev                      # http://localhost:3000, com recarga automática
 pnpm typecheck && pnpm build  # gera frontend/out
 FRONTEND_DIR=$PWD/out uv run job-radar api   # a API serve o build em http://localhost:8000
 ```
+
+Com `pnpm dev`, as chamadas a `/api` são repassadas para a API em `127.0.0.1:8000`. Servindo o build pela API, reinicie a API depois de cada `pnpm build`: a CSP lista o hash dos scripts inline, calculado na inicialização.
 
 ## CI
 

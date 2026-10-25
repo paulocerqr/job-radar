@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { AppShell, useUsuario } from '@/components/AppShell'
 import {
   Activity,
   AlertTriangle,
@@ -67,12 +68,18 @@ function Score({ value }: { value: number }) {
   return <span className={`score score-${value >= 90 ? 'high' : value >= 80 ? 'medium' : 'low'}`}><Sparkles size={13} /> {value}</span>
 }
 
-export default function Page() {
-  const [activeNav, setActiveNav] = useState('Visão geral')
+function saudacao() {
+  const hora = new Date().getHours()
+  return hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
+}
+
+// Visão geral ainda com dados de exemplo do protótipo; os reais entram com a API de vagas
+function VisaoGeral() {
+  const usuario = useUsuario()
+  const primeiroNome = usuario?.nome.split(' ')[0] ?? ''
   const [activeTab, setActiveTab] = useState('Todas')
   const [query, setQuery] = useState('')
   const [jobsState, setJobsState] = useState(jobs)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [toast, setToast] = useState('')
 
   const filteredJobs = useMemo(() => jobsState.filter((job) => {
@@ -88,32 +95,19 @@ export default function Page() {
   }
 
   return (
-    <div className="app-shell">
-      <aside className={`sidebar ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
-        <div className="brand"><div className="brand-mark"><RadarMark /></div>{sidebarOpen && <span>job<span>radar</span></span>}</div>
-        <button className="workspace"><div className="workspace-avatar">PC</div>{sidebarOpen && <><div className="workspace-copy"><strong>Paulo Cerqueira</strong><small>Workspace pessoal</small></div><ChevronDown size={16} /></>}</button>
-        <nav className="main-nav">
-          {[
-            [LayoutDashboard, 'Visão geral'], [BriefcaseBusiness, 'Vagas'], [CheckCircle2, 'Recomendadas'], [Activity, 'Atividade'],
-          ].map(([Icon, label]) => <button key={label as string} className={`nav-item ${activeNav === label ? 'active' : ''}`} onClick={() => setActiveNav(label as string)} title={label as string}><Icon size={18} />{sidebarOpen && <span>{label as string}</span>}{sidebarOpen && label === 'Vagas' && <b>24</b>}</button>)}
-        </nav>
-        {sidebarOpen && <div className="sidebar-section"><div className="section-label">CONFIGURAÇÃO</div><button className="nav-item" onClick={() => setActiveNav('Perfil')}><UserRound size={18} /><span>Meu perfil</span></button><button className="nav-item" onClick={() => setActiveNav('Providers')}><Bot size={18} /><span>Providers de IA</span><span className="status-dot" /></button><button className="nav-item" onClick={() => setActiveNav('Fontes')}><SlidersHorizontal size={18} /><span>Fontes e coleta</span></button></div>}
-        <div className="sidebar-bottom">{sidebarOpen && <div className="health-card"><div className="health-title"><span className="pulse-dot" /> Sistema saudável</div><div className="health-meta">Última coleta há 4 min</div><div className="health-line"><i style={{ width: '82%' }} /></div><small>82% da capacidade da fila</small></div>}<button className="nav-item" onClick={() => setActiveNav('Configurações')} title="Configurações"><Settings2 size={18} />{sidebarOpen && <span>Configurações</span>}</button><button className="nav-item" title="Ajuda"><CircleHelp size={18} />{sidebarOpen && <span>Central de ajuda</span>}</button></div>
-      </aside>
-      <main className="main-content">
-        <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setSidebarOpen(!sidebarOpen)}><Menu size={19} /></button><div className="breadcrumbs"><span>Workspace</span><span>/</span><strong>{activeNav}</strong></div><div className="topbar-actions"><button className="icon-button"><Bell size={18} /><i className="notification-dot" /></button><div className="avatar">PC</div><button className="icon-button"><MoreHorizontal size={19} /></button></div></header>
-        <div className="content-wrap">
-          <section className="hero"><div><div className="eyebrow"><span className="live-dot" /> Radar ativo <span className="eyebrow-separator">·</span> Atualizado agora</div><h1>Bom dia, Paulo <span className="wave">✦</span></h1><p>Aqui está o que encontramos para você hoje.</p></div><button className="outline-button" onClick={() => { setToast('Coleta iniciada. Novas vagas aparecerão em instantes.'); window.setTimeout(() => setToast(''), 2800) }}><RefreshCw size={15} /> Rodar coleta agora</button></section>
+    <>
+      <p className="aviso-exemplo">Dados de exemplo: esta tela passa a mostrar as vagas reais na próxima etapa.</p>
+      <section className="hero"><div><div className="eyebrow"><span className="live-dot" /> Radar ativo <span className="eyebrow-separator">·</span> Atualizado agora</div><h1>{saudacao()}, {primeiroNome} <span className="wave">✦</span></h1><p>Aqui está o que encontramos para você hoje.</p></div><button className="outline-button" onClick={() => { setToast('Coleta iniciada. Novas vagas aparecerão em instantes.'); window.setTimeout(() => setToast(''), 2800) }}><RefreshCw size={15} /> Rodar coleta agora</button></section>
           <section className="stats-grid"><div className="stat-card"><div className="stat-icon purple"><BriefcaseBusiness size={18} /></div><div className="stat-label">Vagas encontradas <span className="trend positive">+18,4%</span></div><strong>128</strong><small>nas últimas 24 horas</small></div><div className="stat-card"><div className="stat-icon green"><Sparkles size={18} /></div><div className="stat-label">Score médio <span className="trend positive">+6,2%</span></div><strong>84,6</strong><small>entre as vagas analisadas</small></div><div className="stat-card"><div className="stat-icon orange"><Clock3 size={18} /></div><div className="stat-label">Na fila de auditoria <span className="trend neutral">de 30</span></div><strong>12</strong><small>processadas automaticamente</small></div><div className="stat-card"><div className="stat-icon blue"><Send size={18} /></div><div className="stat-label">Recomendadas <span className="trend positive">+3 hoje</span></div><strong>24</strong><small>aguardando sua decisão</small></div></section>
           <section className="section-heading"><div><h2>Vagas no radar</h2><p>Priorizadas pelo seu perfil e auditadas por IA.</p></div><button className="text-button">Ver todas <ArrowUpRight size={15} /></button></section>
           <div className="toolbar"><div className="search-box"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por cargo, empresa ou tecnologia..." /></div><div className="tabs">{['Todas', 'Novas', 'Recomendadas'].map(tab => <button key={tab} className={activeTab === tab ? 'tab-active' : ''} onClick={() => setActiveTab(tab)}>{tab}{tab === 'Novas' && <span>8</span>}</button>)}</div><button className="filter-button"><Filter size={16} /> Filtros <span>2</span></button></div>
           <div className="jobs-table"><div className="table-header"><span>OPORTUNIDADE</span><span>LOCALIZAÇÃO</span><span>FONTE</span><span>PUBLICADA</span><span>SCORE IA</span><span /></div>{filteredJobs.map((job) => { const SourceIcon = sourceIcon[job.sourceIcon]; return <div className="job-row" key={job.id}><div className="job-main"><div className={`company-logo ${job.tone}`}><SourceIcon size={18} /></div><div><strong>{job.title}</strong><p>{job.company} <span>·</span> {job.tags.slice(0, 2).join(' · ')}</p></div></div><div className="job-location"><span>{job.location}</span><small className={job.mode === 'Remoto' ? 'remote' : ''}>{job.mode}</small></div><div className="job-source"><SourceIcon size={14} /><span>{job.source}</span></div><div className="job-posted">{job.posted}</div><div><Score value={job.score} /></div><div className="row-actions"><button className="icon-button small" title="Abrir vaga"><ExternalLink size={15} /></button>{job.status !== 'Recomendada' && <button className="icon-button small success-action" onClick={() => act(job.id, 'confirm')} title="Confirmar vaga"><Check size={16} /></button>}</div></div> })}</div>
           <section className="bottom-grid"><div className="panel"><div className="panel-heading"><div><h3>Saúde das fontes</h3><p>Status das últimas coletas</p></div><button className="icon-button small"><MoreHorizontal size={17} /></button></div><div className="source-list">{[['Gupy', 'há 4 min', '128 vagas', 'ok'], ['GitHub Jobs', 'há 18 min', '42 vagas', 'ok'], ['LinkedIn', 'há 1h', '—', 'warn']].map(([name, time, count, state]) => <div className="source-item" key={name}><div className={`source-badge ${name === 'Gupy' ? 'gupy' : name === 'LinkedIn' ? 'linkedin' : 'github'}`}>{name === 'Gupy' ? <Cloud size={15} /> : name === 'LinkedIn' ? <Network size={15} /> : <GitBranch size={15} />}</div><div className="source-name"><strong>{name}</strong><small>{time}</small></div><span className="source-count">{count}</span><span className={`source-state ${state}`}>{state === 'ok' ? 'Operacional' : 'Atenção'}</span></div>)}</div></div><div className="panel activity-panel"><div className="panel-heading"><div><h3>Atividade recente</h3><p>O que aconteceu no seu radar</p></div><button className="text-button">Ver histórico <ArrowUpRight size={14} /></button></div><div className="activity-list"><div className="activity-item"><div className="activity-symbol green"><CheckCircle2 size={15} /></div><div><strong>3 vagas recomendadas</strong><p>Foram adicionadas à sua fila de decisão</p></div><time>há 12 min</time></div><div className="activity-item"><div className="activity-symbol purple"><Bot size={15} /></div><div><strong>Auditoria concluída</strong><p>12 vagas analisadas pelo Groq Llama</p></div><time>há 18 min</time></div></div></div></section>
-        </div>
-      </main>
       {toast && <div className="toast"><CheckCircle2 size={17} /> {toast}</div>}
-    </div>
+    </>
   )
 }
 
-function RadarMark() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12a8 8 0 1 0 16 0M7.5 12a4.5 4.5 0 1 0 9 0M12 12h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M12 12 20 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg> }
+export default function Page() {
+  return <AppShell titulo="Visão geral"><VisaoGeral /></AppShell>
+}

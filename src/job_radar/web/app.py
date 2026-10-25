@@ -1,21 +1,15 @@
-from pathlib import Path
-
 from fastapi import FastAPI, Request
-from fastapi.responses import PlainTextResponse, RedirectResponse, Response
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, Response
 from starlette.middleware.sessions import SessionMiddleware
 
 from job_radar import __version__
 from job_radar.config import get_settings
 from job_radar.web.frontend import Frontend, diretorio_frontend
-from job_radar.web.rotas import paginas, saude
+from job_radar.web.rotas import api, saude
 from job_radar.web.sessao import COOKIE, DURACAO_S, CsrfInvalido, NaoAutenticado, chave_sessao
 
-# Tudo servido pelo próprio app (sem CDN): CSS e HTMX locais, nada inline
-CSP = (
-    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
-    "form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
-)
+# Respostas da API (JSON) não executam nada; o frontend tem CSP própria (web/frontend.py)
+CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
 
 
 def create_app() -> FastAPI:
@@ -39,19 +33,16 @@ def create_app() -> FastAPI:
         return resposta
 
     @app.exception_handler(NaoAutenticado)
-    async def _para_login(request: Request, _: NaoAutenticado) -> Response:
-        if request.headers.get("hx-request"):
-            return Response(status_code=401, headers={"HX-Redirect": "/login"})
-        return RedirectResponse("/login", status_code=303)
+    async def _nao_autenticado(_: Request, __: NaoAutenticado) -> Response:
+        return JSONResponse({"erro": "não autenticado"}, status_code=401)
 
     @app.exception_handler(CsrfInvalido)
     async def _csrf(_: Request, __: CsrfInvalido) -> Response:
-        return PlainTextResponse("Formulário expirado. Recarregue a página.", status_code=403)
+        return JSONResponse({"erro": "sessão expirada; recarregue a página"}, status_code=403)
 
-    app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     app.include_router(saude.router)
-    app.include_router(paginas.router)
-    # por último: rotas da API e páginas Jinja têm prioridade sobre os arquivos do frontend
+    app.include_router(api.router)
+    # por último: as rotas da API têm prioridade sobre os arquivos do frontend
     if diretorio := diretorio_frontend(settings.frontend_dir):
         app.mount("/", Frontend(diretorio), name="frontend")
     return app
