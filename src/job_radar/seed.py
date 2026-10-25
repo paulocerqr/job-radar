@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from job_radar.coleta.fontes.gupy import FILTROS_PADRAO, TERMOS_PADRAO
 from job_radar.config import Settings
 from job_radar.models import Fonte, Perfil, Usuario
 from job_radar.models.enums import Nivel, Papel
@@ -20,10 +21,11 @@ FONTES_PADRAO = [
         "nome": "Gupy",
         "ativa": True,
         "intervalo_min": 60,
-        "max_itens_execucao": 200,
+        "max_itens_execucao": 400,
         "confiabilidade": 80,
         "config": {
-            "termos": ["ti", "tecnologia", "desenvolvimento", "infraestrutura", "software"],
+            "termos": TERMOS_PADRAO,
+            "filtros": FILTROS_PADRAO,
             "tipos": ["vacancy_type_internship"],
         },
     },
