@@ -104,6 +104,17 @@ Nova migration (depois de alterar os models):
 DATABASE_URL=postgresql+psycopg://... uv run alembic revision --autogenerate -m "descricao"
 ```
 
+### Frontend
+
+Next.js em `frontend/`, exportado como arquivos estáticos que a própria API serve (Node só no build; na imagem, o estágio `frontend` do Dockerfile). Requer Node 24 e pnpm.
+
+```bash
+cd frontend && pnpm install
+pnpm dev                      # http://localhost:3000, com recarga automática
+pnpm typecheck && pnpm build  # gera frontend/out
+FRONTEND_DIR=$PWD/out uv run job-radar api   # a API serve o build em http://localhost:8000
+```
+
 ## CI
 
 `.github/workflows/ci.yml`: lint e testes (com Postgres) em todo push e PR. Em push na `main`, publica `ghcr.io/paulocerqr/job-radar` com as tags `<sha>` e `latest`.

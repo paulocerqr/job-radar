@@ -7,6 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from job_radar import __version__
 from job_radar.config import get_settings
+from job_radar.web.frontend import Frontend, diretorio_frontend
 from job_radar.web.rotas import paginas, saude
 from job_radar.web.sessao import COOKIE, DURACAO_S, CsrfInvalido, NaoAutenticado, chave_sessao
 
@@ -50,4 +51,7 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     app.include_router(saude.router)
     app.include_router(paginas.router)
+    # por último: rotas da API e páginas Jinja têm prioridade sobre os arquivos do frontend
+    if diretorio := diretorio_frontend(settings.frontend_dir):
+        app.mount("/", Frontend(diretorio), name="frontend")
     return app

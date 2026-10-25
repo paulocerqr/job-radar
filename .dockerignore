@@ -4,3 +4,7 @@
 !README.md
 !src/
 **/__pycache__
+!frontend/
+frontend/node_modules
+frontend/.next
+frontend/out

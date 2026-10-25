@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     # true quando a UI é servida por HTTPS (cookie só vai em HTTPS); false no compose local
     sessao_cookie_seguro: bool = False
 
+    # build do frontend (Next, `pnpm build` gera frontend/out); na imagem: /app/frontend
+    frontend_dir: Path | None = None
+
     # bot do Telegram (crie com o @BotFather); sem ele, as notificações ficam desligadas
     telegram_bot_token: SecretStr | None = None
     resumo_diario: time = time(20, 30)
