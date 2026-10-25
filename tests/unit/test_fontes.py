@@ -26,7 +26,12 @@ def cliente_com(rotas: dict[str, object]) -> tuple[httpx.Client, list[httpx.Requ
 def test_gupy_mapeia_campos_e_deduplica_entre_termos():
     dados = json.loads((FIXTURES / "gupy_jobs.json").read_text())
     http, requisicoes = cliente_com({"portal.gupy.io/api/job-search/jobs": dados})
-    config = {"termos": ["ti", "tecnologia"], "tipos": ["vacancy_type_internship"], "pausa_s": 0}
+    config = {
+        "termos": ["ti", "tecnologia"],
+        "filtros": [],
+        "tipos": ["vacancy_type_internship"],
+        "pausa_s": 0,
+    }
 
     vagas = obter_coletor("gupy", http).buscar(config, limite=100)
 
@@ -40,6 +45,21 @@ def test_gupy_mapeia_campos_e_deduplica_entre_termos():
     assert df.nivel == Nivel.ESTAGIO
     assert df.empresa
     assert df.publicada_em is not None
+
+
+def test_gupy_busca_por_filtros_sem_termo():
+    dados = json.loads((FIXTURES / "gupy_jobs.json").read_text())
+    http, requisicoes = cliente_com({"portal.gupy.io/api/job-search/jobs": dados})
+    config = {"termos": ["ti"], "filtros": [{"state": "Distrito Federal"}], "pausa_s": 0}
+
+    obter_coletor("gupy", http).buscar(config, limite=100)
+
+    assert len(requisicoes) == 2
+    assert requisicoes[0].url.params["jobName"] == "ti"
+    filtro = requisicoes[1].url.params
+    assert filtro["state"] == "Distrito Federal"
+    assert "jobName" not in filtro
+    assert filtro["type"] == "vacancy_type_internship"
 
 
 def test_gupy_respeita_limite():
