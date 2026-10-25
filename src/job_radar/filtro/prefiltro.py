@@ -23,6 +23,7 @@ class VagaAvaliavel(Protocol):
     modalidade: str
     nivel: str
     publicada_em: datetime | None
+    criado_em: datetime | None  # quando o Job Radar viu a vaga pela primeira vez
 
 
 class PerfilAvaliador(Protocol):
@@ -44,10 +45,14 @@ def _reprovada(motivo: str) -> ResultadoPrefiltro:
     return ResultadoPrefiltro(aprovada=False, score=0, motivo=motivo)
 
 
-def _pontos_recencia(publicada_em: datetime | None, agora: datetime) -> int:
-    if publicada_em is None:
-        return 0
-    dias = (agora - publicada_em).days
+def _pontos_recencia(vista_em: datetime | None, agora: datetime) -> int:
+    """Recência pelo "visto pela primeira vez", não pela data de publicação da fonte.
+
+    As fontes informam quando a vaga foi criada, e vagas ficam abertas ou são
+    reaproveitadas por meses: em 25/10/2026, 318 das vagas ativas tinham publicação mais de
+    14 dias anterior à coleta, e a recência valia 0 para quase todas.
+    """
+    dias = (agora - (vista_em or agora)).days  # sem data: acabou de ser vista
     if dias <= 3:
         return 15
     if dias <= 7:
@@ -102,7 +107,7 @@ def avaliar(
     if no_titulo:
         score += min(60, 40 + 10 * (len(no_titulo) - 1))
     score += min(20, 5 * len(na_descricao))
-    score += _pontos_recencia(vaga.publicada_em, agora)
+    score += _pontos_recencia(vaga.criado_em, agora)
     score += confiabilidade_fonte // 10
     score -= penalidade
     return ResultadoPrefiltro(aprovada=True, score=max(0, min(100, score)))

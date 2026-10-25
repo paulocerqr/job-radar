@@ -16,6 +16,7 @@ class Vaga:
     modalidade: str = Modalidade.PRESENCIAL
     nivel: str = Nivel.ESTAGIO
     publicada_em: datetime | None = AGORA - timedelta(days=1)
+    criado_em: datetime | None = AGORA - timedelta(days=1)
 
 
 @dataclass
@@ -96,7 +97,7 @@ def test_local_desconhecido_passa_com_penalidade():
 
 def test_vaga_antiga_perde_pontos_de_recencia():
     nova = avaliar(Vaga(), Perfil(), 80, AGORA).score
-    antiga = avaliar(Vaga(publicada_em=AGORA - timedelta(days=30)), Perfil(), 80, AGORA).score
+    antiga = avaliar(Vaga(criado_em=AGORA - timedelta(days=30)), Perfil(), 80, AGORA).score
     assert antiga == nova - 15
 
 
@@ -118,3 +119,10 @@ def test_desenvolvimento_de_negocios_nao_vira_palavra_chave():
     perfil = Perfil(palavras_chave=PERFIL_ADMIN_PADRAO["palavras_chave"])
     vaga = Vaga(titulo="Estágio em Desenvolvimento de Negócios", descricao=None)
     assert not avaliar(vaga, perfil, confiabilidade_fonte=80, agora=AGORA).aprovada
+
+
+def test_recencia_conta_quando_foi_vista_nao_a_publicacao():
+    reaproveitada = Vaga(publicada_em=AGORA - timedelta(days=400), criado_em=AGORA)
+    assert avaliar(reaproveitada, Perfil(), 80, AGORA).score == 78  # recência cheia (15)
+    sem_data = Vaga(criado_em=None)  # ainda não gravada: acabou de ser vista
+    assert avaliar(sem_data, Perfil(), 80, AGORA).score == 78
