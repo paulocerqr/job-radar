@@ -616,6 +616,7 @@ Tokens de ação são assinados (HMAC) e expiram com a vaga.
 |---|---|---|---|
 | 1 | Gupy | Endpoint JSON do portal: `portal.gupy.io/api/job-search/jobs` (o antigo `portal.api.gupy.io/api/v1/jobs` responde 404 desde out/2026) | Maior volume de estágios no BR; `jobName` busca no título; filtro `type=vacancy_type_internship` |
 | 1 | GitHub (backend-br/vagas, frontendbr/vagas e similares) | API GitHub (issues) | Oficial |
+| 1 | Solides | Endpoint JSON do portal: `apigw.solides.com.br/jobs/v3/vacancies` (não documentado; achado em 25/10/2026) | Sem autenticação; filtros `contractsType=estagio`, `jobsType`, `locations=DF`; `take` ≤ 25. Na primeira simulação, 15 vagas para a IA contra 0–6 da Gupy |
 | 2 | Greenhouse / Lever / Ashby | APIs públicas por empresa | Lista de empresas em `fonte.config` |
 | 4 | LinkedIn / Indeed / Glassdoor | `python-jobspy` | Frágil, rate limit baixo, sem login |
 | 4 | Programathor, Vagas.com, InfoJobs | Scraping HTML | Manutenção por site |

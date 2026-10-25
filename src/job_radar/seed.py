@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from job_radar.coleta.fontes.gupy import FILTROS_PADRAO, TERMOS_PADRAO
+from job_radar.coleta.fontes.solides import BUSCAS_PADRAO as BUSCAS_SOLIDES
 from job_radar.config import Settings
 from job_radar.models import Fonte, Perfil, Usuario
 from job_radar.models.enums import Nivel, Papel
@@ -37,6 +38,15 @@ FONTES_PADRAO = [
         "max_itens_execucao": 30,
         "confiabilidade": 70,
         "config": {"repositorio": "backend-br/vagas"},
+    },
+    {
+        "id": "solides",
+        "nome": "Solides",
+        "ativa": True,
+        "intervalo_min": 120,
+        "max_itens_execucao": 300,
+        "confiabilidade": 75,
+        "config": {"buscas": BUSCAS_SOLIDES},
     },
     {
         "id": "greenhouse",
