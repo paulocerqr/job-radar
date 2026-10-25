@@ -5,7 +5,7 @@ from collections.abc import Sequence
 
 from job_radar.models import Perfil, Vaga
 
-VERSAO_PROMPT = "v1"
+VERSAO_PROMPT = "v2"
 LIMITE_DESCRICAO = 6000
 
 SISTEMA = """\
@@ -38,6 +38,8 @@ Critérios:
 - red_flags: sinais de vaga ruim (exigências incompatíveis com o nível, descrição genérica demais,
   vaga que não é da área de tecnologia, indícios de golpe).
 - motivo_descarte: obrigatório quando score < 60 ou alguma compatibilidade for false; senão null.
+- regras_do_candidato: preferências escritas pelo próprio candidato. Elas prevalecem sobre os
+  critérios acima quando houver conflito (ex.: aceitar remoto com idas esporádicas a outra cidade).
 - Responda exatamente um item por vaga, com o mesmo id. Não invente informação ausente na vaga.
 """
 
@@ -58,6 +60,7 @@ def montar_prompt(perfil: Perfil, vagas: Sequence[tuple[str, Vaga]]) -> tuple[st
             "areas_de_interesse": perfil.palavras_chave,
             "aceita_remoto": perfil.aceita_remoto,
             "localidades_presenciais": perfil.localidades,
+            "regras_do_candidato": perfil.instrucoes_ia or None,
         },
         "vagas": [
             {

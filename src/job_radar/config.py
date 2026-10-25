@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     # cifra as chaves de API dos providers no banco (gere com `job-radar chave-fernet`)
     fernet_key: SecretStr | None = None
 
+    # sessão da Web UI: sem SESSAO_SECRET, a chave é derivada da FERNET_KEY
+    sessao_secret: SecretStr | None = None
+    # true quando a UI é servida por HTTPS (cookie só vai em HTTPS); false no compose local
+    sessao_cookie_seguro: bool = False
+
     # bot do Telegram (crie com o @BotFather); sem ele, as notificações ficam desligadas
     telegram_bot_token: SecretStr | None = None
     resumo_diario: time = time(20, 30)
@@ -50,6 +55,7 @@ class Settings(BaseSettings):
         "github_token",
         "fernet_key",
         "telegram_bot_token",
+        "sessao_secret",
         mode="before",
     )
     @classmethod

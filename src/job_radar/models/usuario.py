@@ -39,6 +39,8 @@ class Perfil(ComAtualizadoEm, Base):
         ForeignKey("usuario.id", ondelete="CASCADE"), primary_key=True
     )
     curriculo_md: Mapped[str] = mapped_column(default="", server_default="")
+    # regras em texto livre que vão para o prompt (ex.: "aceito remoto com idas esporádicas")
+    instrucoes_ia: Mapped[str] = mapped_column(default="", server_default="")
     palavras_chave: Mapped[list[str]] = mapped_column(
         ARRAY(Text), default=list, server_default="{}"
     )

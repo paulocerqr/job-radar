@@ -1,0 +1,16 @@
+<div class="simulacao" id="simulacao">
+  {% if erros %}
+  <p class="alerta erro">Corrija o formulário: {{ erros.values() | join('; ') }}</p>
+  {% endif %}
+  <div class="numeros">
+    <div><span class="rotulo">Vagas ativas no banco</span><strong>{{ nova.avaliadas }}</strong></div>
+    <div><span class="rotulo">Passam no pré-filtro</span><strong>{{ nova.aprovadas }}</strong><small>hoje: {{ atual.aprovadas }}</small></div>
+    <div><span class="rotulo">Iriam para a IA (nota ≥ 50)</span><strong class="destaque">{{ nova.para_fila }}</strong><small>hoje: {{ atual.para_fila }}</small></div>
+  </div>
+  {% if nova.exemplos %}
+  <ol class="exemplos">
+    {% for nota, titulo in nova.exemplos %}<li><span class="nota">{{ nota }}</span> {{ titulo }}</li>{% endfor %}
+  </ol>
+  {% endif %}
+  <p class="dica">Simulação sobre as vagas já coletadas; nada foi salvo. A IA ainda decide quais são recomendadas.</p>
+</div>

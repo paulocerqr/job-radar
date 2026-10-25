@@ -1,10 +1,53 @@
-from fastapi import FastAPI
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
 from job_radar import __version__
-from job_radar.web.rotas import saude
+from job_radar.config import get_settings
+from job_radar.web.rotas import paginas, saude
+from job_radar.web.sessao import COOKIE, DURACAO_S, CsrfInvalido, NaoAutenticado, chave_sessao
+
+# Tudo servido pelo próprio app (sem CDN): CSS e HTMX locais, nada inline
+CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+    "form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
+)
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Job Radar", version=__version__)
+    settings = get_settings()
+    app = FastAPI(title="Job Radar", version=__version__, docs_url=None, redoc_url=None)
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=chave_sessao(settings),
+        session_cookie=COOKIE,
+        max_age=DURACAO_S,
+        same_site="lax",
+        https_only=settings.sessao_cookie_seguro,
+    )
+
+    @app.middleware("http")
+    async def cabecalhos_de_seguranca(request: Request, call_next) -> Response:
+        resposta = await call_next(request)
+        resposta.headers.setdefault("Content-Security-Policy", CSP)
+        resposta.headers.setdefault("X-Content-Type-Options", "nosniff")
+        resposta.headers.setdefault("Referrer-Policy", "same-origin")
+        return resposta
+
+    @app.exception_handler(NaoAutenticado)
+    async def _para_login(request: Request, _: NaoAutenticado) -> Response:
+        if request.headers.get("hx-request"):
+            return Response(status_code=401, headers={"HX-Redirect": "/login"})
+        return RedirectResponse("/login", status_code=303)
+
+    @app.exception_handler(CsrfInvalido)
+    async def _csrf(_: Request, __: CsrfInvalido) -> Response:
+        return PlainTextResponse("Formulário expirado. Recarregue a página.", status_code=403)
+
+    app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     app.include_router(saude.router)
+    app.include_router(paginas.router)
     return app

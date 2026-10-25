@@ -1,7 +1,7 @@
 """Requer Postgres: defina TEST_DATABASE_URL (o CI define; localmente use o compose)."""
 
 from alembic import command
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, select, text
 
 from job_radar.config import get_settings
 from job_radar.db import alembic_config, get_engine, nova_sessao
@@ -37,9 +37,9 @@ def test_seed_idempotente(banco_migrado, monkeypatch):
 def test_migracao_acrescenta_palavras_de_area_sem_duplicar(banco_com_seed):
     cfg = alembic_config()
     command.downgrade(cfg, "a7c3e91d4b20")
+    # SQL direto: nesta revisão o banco ainda não tem as colunas mais novas do modelo
     with nova_sessao() as sessao:
-        perfil = sessao.scalars(select(Perfil)).one()
-        perfil.palavras_chave = ["devops", "dados"]  # "dados" já existe: não duplica
+        sessao.execute(text("UPDATE perfil SET palavras_chave = '{devops,dados}'"))  # não duplica
         sessao.commit()
 
     command.upgrade(cfg, "head")

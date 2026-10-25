@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% set aba = 'perfil' %}
+{% block titulo %}Perfil & Regras{% endblock %}
+{% macro erro(campo) %}{% if erros and erros[campo] %}<span class="erro-campo">{{ erros[campo] }}</span>{% endif %}{% endmacro %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>Perfil &amp; Regras</h1>
+    <p class="subtitulo">O que o pré-filtro usa para escolher as vagas que vão para a IA, e o que a IA usa para dar a nota.</p>
+  </div>
+</div>
+
+{% if salvo %}
+<p class="alerta ok" role="status">Perfil salvo.{% if recalculadas is not none %} Pool recalculado: {{ recalculadas }} vaga(s) mudaram de nota; o alimentador leva as novas aprovadas para a fila em até 10 min.{% endif %}</p>
+{% endif %}
+{% if erros %}<p class="alerta erro" role="alert">Há campos com erro; nada foi salvo.</p>{% endif %}
+
+<form method="post" action="/perfil" class="grade-perfil" id="form-perfil">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+
+  <section class="cartao">
+    <h2>Pré-filtro</h2>
+    <p class="dica">Sem palavra-chave no <b>título</b>, a nota máxima é 43 e a vaga não chega à IA (mínimo 50). Prefira palavras de área (“suporte”, “dados”) às de stack, que quase nunca aparecem em títulos de estágio.</p>
+    <div class="duas-colunas">
+      <label>Palavras-chave <small>uma por linha</small>
+        <textarea name="palavras_chave" rows="12" spellcheck="false">{{ palavras_chave_txt }}</textarea>
+        {{ erro('palavras_chave') }}
+      </label>
+      <label>Palavras excluídas <small>no título, reprovam a vaga</small>
+        <textarea name="palavras_excluidas" rows="12" spellcheck="false">{{ palavras_excluidas_txt }}</textarea>
+      </label>
+    </div>
+    <fieldset>
+      <legend>Níveis aceitos</legend>
+      <div class="opcoes">
+        {% for nivel in niveis_editaveis %}
+        <label class="opcao"><input type="checkbox" name="niveis" value="{{ nivel }}" {% if nivel in p.niveis %}checked{% endif %}> {{ nivel }}</label>
+        {% endfor %}
+      </div>
+      {{ erro('niveis') }}
+    </fieldset>
+    <div class="duas-colunas">
+      <label>Localidades presenciais/híbridas <small>Cidade/UF, uma por linha</small>
+        <textarea name="localidades" rows="3" spellcheck="false">{{ localidades_txt }}</textarea>
+        {{ erro('localidades') }}
+      </label>
+      <div class="pilha">
+        <label class="opcao"><input type="checkbox" name="aceita_remoto" {% if p.aceita_remoto %}checked{% endif %}> Aceito vagas remotas de qualquer lugar</label>
+      </div>
+    </div>
+    <div class="acoes-linha">
+      <button class="botao secundario" type="button"
+              hx-post="/perfil/simular" hx-include="#form-perfil" hx-target="#simulacao" hx-swap="outerHTML"
+              hx-indicator="#carregando">Simular com as vagas do banco</button>
+      <span id="carregando" class="indicador">calculando…</span>
+    </div>
+    <div id="simulacao"></div>
+  </section>
+
+  <section class="cartao">
+    <h2>Auditoria pela IA</h2>
+    <div class="tres-colunas">
+      <label>Nota mínima para recomendar
+        <input type="number" name="score_minimo" min="0" max="100" value="{{ p.score_minimo }}" required>
+        {{ erro('score_minimo') }}
+      </label>
+      <label>Dias no pool antes de expirar
+        <input type="number" name="ttl_pool_dias" min="1" max="60" value="{{ p.ttl_pool_dias }}" required>
+        {{ erro('ttl_pool_dias') }}
+      </label>
+      <label>Dias como recomendada
+        <input type="number" name="ttl_recomendada_dias" min="1" max="60" value="{{ p.ttl_recomendada_dias }}" required>
+        {{ erro('ttl_recomendada_dias') }}
+      </label>
+    </div>
+    <label>Instruções para a IA <small>prevalecem sobre os critérios padrão; até {{ limite_instrucoes }} caracteres</small>
+      <textarea name="instrucoes_ia" rows="4" maxlength="{{ limite_instrucoes }}"
+                placeholder="Ex.: aceito vagas remotas que pedem idas esporádicas a outra cidade (eventos, integração); descarte só presença frequente fora do DF.">{{ p.instrucoes_ia }}</textarea>
+      {{ erro('instrucoes_ia') }}
+    </label>
+    <label>Currículo <small>Markdown; a IA compara os requisitos da vaga com este texto</small>
+      <textarea name="curriculo_md" rows="16" class="mono" maxlength="{{ limite_curriculo }}">{{ p.curriculo_md }}</textarea>
+      {{ erro('curriculo_md') }}
+    </label>
+  </section>
+
+  <div class="barra-salvar">
+    <label class="opcao"><input type="checkbox" name="recalcular_pool" checked> Recalcular as notas do pool com as regras novas</label>
+    <button class="botao primario" type="submit">Salvar</button>
+  </div>
+</form>
+{% endblock %}
