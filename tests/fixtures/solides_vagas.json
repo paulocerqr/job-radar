@@ -1,0 +1,159 @@
+{
+  "totalPages": 1,
+  "currentPage": 1,
+  "count": 3,
+  "data": [
+    {
+      "id": 942963,
+      "title": "Estágio Financeiro",
+      "description": "<p><strong>Quem somos?</strong></p>\n<p>A Incentive.me é uma plataforma tecnológica de engajamento da força de vendas que permite alcançar um novo patamar na Gestão de Incentivos. Conectamos empresas a vendedores ao longo de toda a cadeia, até a ponta no varejo, criando campanhas de incentivo eficaze",
+      "currentState": "em_andamento",
+      "companyName": "INDOMITUM DESIGN LTDA",
+      "state": {
+        "id": 19,
+        "name": "Rio de Janeiro",
+        "code": "RJ"
+      },
+      "city": {
+        "id": 3243,
+        "name": "Rio de Janeiro",
+        "stateId": 19
+      },
+      "slug": "incentiveme",
+      "redirectLink": "https://incentiveme./vacancies/942963?origem=portal",
+      "homeOffice": false,
+      "jobType": "remoto",
+      "seniority": [
+        {
+          "id": 371223,
+          "name": "Estagiário",
+          "level": null
+        }
+      ],
+      "recruitmentContractType": [
+        {
+          "id": 167694,
+          "name": "Estágio",
+          "level": null
+        }
+      ],
+      "createdAt": "2026-10-23",
+      "occupationAreas": [
+        {
+          "id": 349582,
+          "name": "Financeiro",
+          "level": null
+        }
+      ]
+    },
+    {
+      "id": 942452,
+      "title": "Mecanico Fiat",
+      "description": "<h2>Descrição da Vaga de 1/2 Oficial Mecânico </h2>\n<p><strong>Responsabilidades:</strong></p>\n<ul>\n<li>Realizar manutenção preventiva e corretiva em equipamentos mecânicos.</li>\n<li>Diagnosticar falhas e realizar reparos conforme necessário.</li>\n<li>Executar testes de funcionamento após os reparos",
+      "currentState": "em_andamento",
+      "companyName": "Imports",
+      "state": {
+        "id": 23,
+        "name": "Rio Grande do Sul",
+        "code": "RS"
+      },
+      "city": {
+        "id": 5026,
+        "name": "Sarandi",
+        "stateId": 23
+      },
+      "slug": "imports",
+      "redirectLink": "https://imports./vacancies/942452?origem=portal",
+      "homeOffice": false,
+      "jobType": "remoto",
+      "seniority": [],
+      "recruitmentContractType": [
+        {
+          "id": 8,
+          "name": "Freelancer",
+          "level": null
+        },
+        {
+          "id": 9,
+          "name": "PJ",
+          "level": null
+        },
+        {
+          "id": 10,
+          "name": "CLT",
+          "level": null
+        },
+        {
+          "id": 167694,
+          "name": "Estágio",
+          "level": null
+        },
+        {
+          "id": 167695,
+          "name": "Jovem Aprendiz",
+          "level": null
+        },
+        {
+          "id": 167696,
+          "name": "Temporário",
+          "level": null
+        },
+        {
+          "id": 202703,
+          "name": "Cooperado",
+          "level": null
+        },
+        {
+          "id": 399601,
+          "name": "Autônomo",
+          "level": null
+        }
+      ],
+      "createdAt": "2026-10-21",
+      "occupationAreas": []
+    },
+    {
+      "id": 939337,
+      "title": "025/2026 (LAB)- Estágio — Inteligência Artificial e Desenvolvimento Full Stack ",
+      "description": "<p>Buscamos uma pessoa organizada, com autonomia para trabalhar remotamente e disposição para aprender. A atuação começará com rotulação de imagens e apoio ao cientista de dados, com evolução para desenvolvimento full stack em Angular e .NET.</p>\n<p><strong>Requisitos</strong></p>\n<ul>\n<li>\n<p>Cursa",
+      "currentState": "em_andamento",
+      "companyName": "CONCERT TECHNOLOGIES S.A.",
+      "state": {
+        "id": 17,
+        "name": "Minas Gerais",
+        "code": "MG"
+      },
+      "city": {
+        "id": 2310,
+        "name": "Belo Horizonte",
+        "stateId": 17
+      },
+      "slug": "concert",
+      "redirectLink": "https://concert./vacancies/939337?origem=portal",
+      "homeOffice": false,
+      "jobType": "remoto",
+      "seniority": [
+        {
+          "id": 371223,
+          "name": "Estagiário",
+          "level": null
+        }
+      ],
+      "recruitmentContractType": [
+        {
+          "id": 167694,
+          "name": "Estágio",
+          "level": null
+        }
+      ],
+      "createdAt": "2026-10-15",
+      "occupationAreas": [
+        {
+          "id": 349584,
+          "name": "Tecnologia",
+          "level": null
+        }
+      ]
+    }
+  ]
+}

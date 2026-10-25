@@ -100,3 +100,41 @@ def test_github_extrai_empresa_com_na():
     vaga = mapear(issue, "github_backendbr")
     assert vaga.titulo == "Software Engineer (For Women in Tech Candidates)"
     assert vaga.empresa == "Google"
+
+
+def test_solides_mapeia_campos_e_monta_link():
+    dados = json.loads((FIXTURES / "solides_vagas.json").read_text())
+    http, requisicoes = cliente_com({"apigw.solides.com.br/jobs/v3/vacancies": dados})
+    config = {"buscas": [{"contractsType": "estagio", "jobsType": "remoto"}], "pausa_s": 0}
+
+    vagas = obter_coletor("solides", http).buscar(config, limite=100)
+
+    assert len(requisicoes) == 1  # totalPages = 1
+    params = requisicoes[0].url.params
+    assert params["contractsType"] == "estagio"
+    assert params["take"] == "25"
+    assert len(vagas) == len(dados["data"])
+    ia = next(v for v in vagas if "Inteligência Artificial" in v.titulo)
+    assert ia.fonte_id == "solides"
+    assert ia.url == "https://concert.vagas.solides.com.br/vaga/939337"
+    assert ia.titulo.endswith("Full Stack")  # sem o espaço final da fonte
+    assert ia.uf == "MG"
+    assert ia.modalidade == Modalidade.REMOTO
+    assert ia.nivel == Nivel.ESTAGIO
+    assert ia.publicada_em is not None and ia.publicada_em.tzinfo is not None
+
+
+def test_solides_pagina_e_ignora_vaga_encerrada():
+    item = json.loads((FIXTURES / "solides_vagas.json").read_text())["data"][0]
+
+    def responder(request: httpx.Request):
+        pagina = int(request.url.params["page"])
+        encerrada = {**item, "id": "x2", "currentState": "encerrada"}
+        dados = [{**item, "id": "x1"}] if pagina == 1 else [encerrada]
+        return {"totalPages": 2, "data": dados}
+
+    http, requisicoes = cliente_com({"apigw.solides.com.br/jobs/v3/vacancies": responder})
+    vagas = obter_coletor("solides", http).buscar({"buscas": [{}], "pausa_s": 0}, limite=100)
+
+    assert [r.url.params["page"] for r in requisicoes] == ["1", "2"]
+    assert [v.id_externo for v in vagas] == ["x1"]
