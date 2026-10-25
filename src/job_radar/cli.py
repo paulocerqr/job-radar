@@ -163,6 +163,7 @@ def coletar(fonte: str) -> None:
     from job_radar.coleta.base import fontes_registradas
     from job_radar.coleta.execucao import FonteNaoCadastrada, executar_coleta
     from job_radar.db import nova_sessao
+    from job_radar.models import Fonte
     from job_radar.models.enums import StatusExecucao
 
     disponiveis = fontes_registradas()
@@ -170,6 +171,11 @@ def coletar(fonte: str) -> None:
         log.error("fonte desconhecida", extra={"fonte": fonte, "disponiveis": disponiveis})
         raise typer.Exit(2)
     with nova_sessao() as sessao:
+        # desativada pela Web UI: o CronJob continua agendado, mas não coleta
+        cadastro = sessao.get(Fonte, fonte)
+        if cadastro is not None and not cadastro.ativa:
+            log.info("fonte desativada; nada a coletar", extra={"fonte": fonte})
+            return
         try:
             execucao = executar_coleta(sessao, fonte)
         except FonteNaoCadastrada:

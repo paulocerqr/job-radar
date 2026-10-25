@@ -21,8 +21,8 @@ const PRINCIPAL: ItemMenu[] = [
 ]
 const CONFIGURACAO: ItemMenu[] = [
   { href: '/perfil/', rotulo: 'Meu perfil', Icone: UserRound, pronto: true },
-  { href: '/providers/', rotulo: 'Providers de IA', Icone: Bot, pronto: false },
-  { href: '/fontes/', rotulo: 'Fontes e coleta', Icone: SlidersHorizontal, pronto: false },
+  { href: '/providers/', rotulo: 'Providers de IA', Icone: Bot, pronto: true },
+  { href: '/fontes/', rotulo: 'Fontes e coleta', Icone: SlidersHorizontal, pronto: true },
 ]
 
 function iniciais(nome: string) {
