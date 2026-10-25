@@ -10,6 +10,7 @@ import hashlib
 import logging
 import re
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
@@ -43,6 +44,15 @@ class Frontend(StaticFiles):
         hashes = hashes_de_scripts(diretorio)
         self.csp = csp_do_frontend(hashes)
         log.info("frontend carregado", extra={"dir": str(diretorio), "scripts": len(hashes)})
+
+    async def get_response(self, path: str, scope) -> Response:
+        resposta = await super().get_response(path, scope)
+        # "/login" → "/login/": o StaticFiles monta a URL absoluta com o esquema que chega
+        # ao pod (http, atrás do túnel e do Traefik); só o caminho mantém o https do navegador
+        if resposta.status_code in (301, 302, 307, 308) and "location" in resposta.headers:
+            destino = urlsplit(resposta.headers["location"])
+            resposta.headers["location"] = urlunsplit(("", "", destino.path, destino.query, ""))
+        return resposta
 
     def file_response(self, full_path, stat_result, scope, status_code=200) -> Response:
         resposta = super().file_response(full_path, stat_result, scope, status_code)

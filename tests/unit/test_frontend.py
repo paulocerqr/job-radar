@@ -45,5 +45,16 @@ def test_api_serve_frontend_com_csp_por_hash(tmp_path, monkeypatch):
     assert "'sha256-" not in api.headers["content-security-policy"]
 
 
+def test_redirect_de_diretorio_sem_esquema(tmp_path, monkeypatch):
+    build = build_falso(tmp_path)
+    (build / "login").mkdir()
+    (build / "login/index.html").write_text("<html></html>")
+    monkeypatch.setenv("FRONTEND_DIR", str(build))
+    get_settings.cache_clear()
+    resposta = TestClient(create_app()).get("/login", follow_redirects=False)
+    assert resposta.status_code == 307
+    assert resposta.headers["location"] == "/login/"
+
+
 def test_sem_build_do_frontend_nada_e_montado():
     assert TestClient(create_app()).get("/").status_code == 404
