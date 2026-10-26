@@ -63,6 +63,8 @@ def validar(corpo: dict, novo: bool) -> tuple[dict, dict[str, str]]:
         campos["nome"] = nome
     if presente("base_url"):
         url = str(corpo.get("base_url", "")).strip().rstrip("/")
+        # o cliente acrescenta /chat/completions; colar a URL do endpoint é um erro comum
+        url = url.removesuffix("/chat/completions").rstrip("/")
         if problema := url_publica(url):
             erros["base_url"] = problema
         campos["base_url"] = url
