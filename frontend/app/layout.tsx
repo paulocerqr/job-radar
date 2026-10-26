@@ -4,7 +4,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Job Radar',
   description: 'Vagas de estágio coletadas, filtradas e auditadas por IA',
-  icons: { icon: '/icon.svg' },
+  icons: { icon: '/radar.svg' }, // nome novo: o /icon.svg antigo (logo do v0) ficou em cache na Cloudflare
 }
 
 export const viewport: Viewport = {
