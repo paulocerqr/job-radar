@@ -140,3 +140,14 @@ def test_listar_modelos(cliente, monkeypatch):
     assert cliente.get(f"/api/providers/{pid}/modelos").json() == {
         "modelos": ["a-modelo", "b-modelo"]
     }
+
+
+def test_url_com_chat_completions_e_ajustada(cliente):
+    r = cliente.post(
+        "/api/providers", json=novo(base_url="https://api.publica.dev/v1/chat/completions")
+    )
+    assert r.status_code == 201
+    assert (
+        cliente.get("/api/providers").json()["providers"][0]["base_url"]
+        == "https://api.publica.dev/v1"
+    )

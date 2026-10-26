@@ -88,7 +88,7 @@ export function FormProvider({ inicial, aoSalvar, aoCancelar }: {
       )}
       <div className="grade-2">
         {!editando && <label className="campo">Nome<input value={form.nome} onChange={(e) => mudar('nome', e.target.value)} maxLength={40} required placeholder="ex.: groq-pessoal" />{erro('nome')}</label>}
-        <label className="campo">URL da API <small>termina em /v1, por exemplo</small><input value={form.base_url} onChange={(e) => mudar('base_url', e.target.value)} required placeholder="https://api.exemplo.com/v1" />{erro('base_url')}</label>
+        <label className="campo">URL da API <small>a base, sem /chat/completions (ex.: https://openrouter.ai/api/v1)</small><input value={form.base_url} onChange={(e) => mudar('base_url', e.target.value)} required placeholder="https://api.exemplo.com/v1" />{erro('base_url')}</label>
         <label className="campo">Modelo
           <input value={form.modelo} onChange={(e) => mudar('modelo', e.target.value)} required list="modelos-disponiveis" />
           <datalist id="modelos-disponiveis">{modelos.map((m) => <option key={m} value={m} />)}</datalist>
