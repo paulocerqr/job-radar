@@ -71,6 +71,13 @@ function Providers() {
         <div><h1>Providers de IA</h1><p>Quem audita as vagas. Em caso de erro ou limite, a auditoria passa para o próximo da lista.</p></div>
         {!adicionando && <button className="outline-button" onClick={() => setAdicionando(true)}><Plus size={15} /> Adicionar provider</button>}
       </section>
+      <section className="stats-grid" aria-label="Resumo dos providers">
+        <div className="stat-card"><div className="stat-label">Providers ativos</div><strong>{lista.filter((p) => p.ativo).length}</strong><small>{lista.length} cadastrado(s) na cascata</small></div>
+        <div className="stat-card"><div className="stat-label">Requisições hoje</div><strong>{milhar(lista.reduce((n, p) => n + p.hoje.requisicoes, 0))}</strong><small>nos seus providers</small></div>
+        <div className="stat-card"><div className="stat-label">Tokens hoje</div><strong>{milhar(lista.reduce((n, p) => n + p.hoje.tokens_entrada + p.hoje.tokens_saida, 0))}</strong><small>entrada e saída</small></div>
+        <div className="stat-card"><div className="stat-label">Erros hoje</div><strong>{milhar(lista.reduce((n, p) => n + p.hoje.erros, 0))}</strong><small>registrados nas requisições</small></div>
+      </section>
+      <section className="section-heading"><div><h2>Cadeia de prioridade & modelos</h2><p>Use as setas para alterar a ordem. As mudanças são salvas na hora.</p></div></section>
       {adicionando && (
         <section className="panel bloco">
           <div className="panel-heading"><div><h3>Novo provider</h3><p>Qualquer API compatível com a da OpenAI (Groq, NVIDIA, Gemini, OpenRouter…). Entra no fim da fila.</p></div></div>

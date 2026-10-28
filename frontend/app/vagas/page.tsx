@@ -60,9 +60,15 @@ function Vagas() {
 
   return (
     <>
-      <section className="hero"><div><h1>Vagas</h1><p>Todas as vagas que passaram pelo pré-filtro, por situação.</p></div></section>
+      <section className="hero"><div><h1>Vagas & triagem</h1><p>Todas as vagas que passaram pelo pré-filtro, por situação.</p></div></section>
+      {resumo && <section className="stats-grid" aria-label="Resumo da triagem">
+        <div className="stat-card"><div className="stat-label">Recomendadas</div><strong>{resumo.contagens.recomendada}</strong><small>aguardando sua decisão</small></div>
+        <div className="stat-card"><div className="stat-label">Na fila da IA</div><strong>{resumo.contagens.fila}</strong><small>aguardando auditoria</small></div>
+        <div className="stat-card"><div className="stat-label">Pool</div><strong>{resumo.contagens.pool}</strong><small>aguardando espaço na fila</small></div>
+        <div className="stat-card"><div className="stat-label">Confirmadas</div><strong>{resumo.contagens.confirmada}</strong><small>selecionadas por você</small></div>
+      </section>}
       <div className="toolbar">
-        <div className="search-box"><Search size={17} /><input value={busca} onChange={(e) => { setBusca(e.target.value); setPagina(1) }} placeholder="Buscar por cargo ou empresa…" /></div>
+        <div className="search-box"><Search size={17} /><input aria-label="Buscar por cargo ou empresa" value={busca} onChange={(e) => { setBusca(e.target.value); setPagina(1) }} placeholder="Buscar por cargo ou empresa…" /></div>
       </div>
       <div className="tabs tabs-status" role="tablist">
         {ABAS.map((aba) => (

@@ -116,9 +116,16 @@ function MeuPerfil() {
     <form onSubmit={salvar}>
       <section className="hero">
         <div>
-          <h1>Meu perfil</h1>
+          <h1>Meu perfil & regras</h1>
           <p>O que o pré-filtro usa para escolher as vagas que vão para a IA, e o que a IA usa para dar a nota.</p>
         </div>
+      </section>
+
+      <section className="stats-grid" aria-label="Resumo das regras">
+        <div className="stat-card"><div className="stat-label">Palavras de inclusão</div><strong>{linhas(form.palavras_chave).length}</strong><small>termos para o pré-filtro</small></div>
+        <div className="stat-card"><div className="stat-label">Palavras excluídas</div><strong>{linhas(form.palavras_excluidas).length}</strong><small>reprovação pelo título</small></div>
+        <div className="stat-card"><div className="stat-label">Nota mínima da IA</div><strong>{form.score_minimo}<small> / 100</small></strong><small>para recomendar uma vaga</small></div>
+        <div className="stat-card"><div className="stat-label">Trabalho remoto</div><strong>{form.aceita_remoto ? 'Aceito' : 'Não aceito'}</strong><small>{form.niveis.length} nível(is) de carreira aceito(s)</small></div>
       </section>
 
       {temErros && <p className="alerta alerta-erro" role="alert">Há campos com erro; nada foi salvo.</p>}
