@@ -13,7 +13,7 @@ type Provider = {
   prioridade: number; ativo: boolean; tamanho_lote: number; rpm: number | null; rpd: number | null; timeout_s: number
   ultimo_erro: string | null; ultimo_erro_em: string | null; hoje: Uso; ultimos_7_dias: { requisicoes: number; tokens: number; erros: number }
 }
-type Teste = { ok: boolean; segundos?: number; modelo?: string; erro?: string }
+type Teste = { ok?: boolean; pendente?: boolean; segundos?: number; modelo?: string; erro?: string }
 
 const milhar = (n: number) => n.toLocaleString('pt-BR')
 
@@ -27,6 +27,23 @@ function Providers() {
 
   const carregar = useCallback(() => api<{ providers: Provider[] }>('/providers').then((r) => setLista(r.providers)), [])
   useEffect(() => { carregar() }, [carregar])
+
+  useEffect(() => {
+    const pendentes = Object.entries(testes).filter(([, t]) => t !== 'testando' && t.pendente)
+    if (!pendentes.length) return
+    let cancelado = false
+    const timer = window.setTimeout(async () => {
+      const resultados = await Promise.all(pendentes.map(async ([id]) => {
+        try {
+          return [id, await api<Teste>(`/providers/${id}/teste`)] as const
+        } catch (e) {
+          return [id, { ok: false, erro: e instanceof Error ? e.message : 'Erro' }] as const
+        }
+      }))
+      if (!cancelado) setTestes((t) => ({ ...t, ...Object.fromEntries(resultados) }))
+    }, 2000)
+    return () => { cancelado = true; window.clearTimeout(timer) }
+  }, [testes])
 
   function avisar(texto: string) {
     setToast(texto)
@@ -88,6 +105,7 @@ function Providers() {
       <div className="lista-providers">
         {lista.map((p, i) => {
           const teste = testes[p.id]
+          const testando = teste === 'testando' || teste?.pendente
           return (
             <section className={`panel provider ${p.ativo ? '' : 'fonte-off'}`} key={p.id}>
               <div className="provider-ordem">
@@ -97,7 +115,7 @@ function Providers() {
               </div>
               <div className="provider-corpo">
                 <div className="fonte-topo">
-                  <div className="fonte-nome"><strong>{p.nome}</strong><small><code>{p.modelo}</code> · {p.tipo === 'cli' ? 'CLI local' : p.base_url}</small></div>
+                  <div className="fonte-nome"><strong>{p.nome}</strong><small><code>{p.modelo}</code> · {p.tipo === 'cli' ? 'CLI no worker' : p.base_url}</small></div>
                   <label className="interruptor"><input type="checkbox" checked={p.ativo} onChange={() => alternar(p)} /><span>{p.ativo ? 'Ativo' : 'Desativado'}</span></label>
                 </div>
                 <div className="provider-numeros">
@@ -108,12 +126,13 @@ function Providers() {
                 </div>
                 {p.ultimo_erro && <p className="fonte-erro"><TriangleAlert size={14} /> {tempoRelativo(p.ultimo_erro_em)}: {p.ultimo_erro.slice(0, 240)}</p>}
                 <div className="acoes-linha">
-                  <button className="outline-button" disabled={teste === 'testando'} onClick={() => testar(p)}><PlugZap size={14} /> {teste === 'testando' ? 'Testando…' : 'Testar conexão'}</button>
+                  <button className="outline-button" disabled={Boolean(testando)} onClick={() => testar(p)}><PlugZap size={14} /> {testando ? (p.tipo === 'cli' ? 'Aguardando o worker…' : 'Testando…') : 'Testar conexão'}</button>
                   {p.tipo !== 'cli' && editando !== p.id && <button className="outline-button" onClick={() => setEditando(p.id)}><Pencil size={14} /> Editar</button>}
-                  {teste && teste !== 'testando' && (
-                    <span className={teste.ok ? 'teste-ok' : 'teste-erro'}>{teste.ok ? `OK em ${teste.segundos} s (${teste.modelo})` : teste.erro}</span>
+                  {teste && teste !== 'testando' && !teste.pendente && (
+                    <span role="status" className={teste.ok ? 'teste-ok' : 'teste-erro'}>{teste.ok ? `OK em ${teste.segundos} s (${teste.modelo})` : teste.erro}</span>
                   )}
                 </div>
+                {p.tipo === 'cli' && testando && <p role="status">O teste será executado pelo worker antes da próxima rodada de auditoria.</p>}
                 {editando === p.id && (
                   <FormProvider inicial={{ ...p, base_url: p.base_url ?? "" }} aoCancelar={() => setEditando(null)} aoSalvar={(m) => { setEditando(null); avisar(m); carregar() }} />
                 )}

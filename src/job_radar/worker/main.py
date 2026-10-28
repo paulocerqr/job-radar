@@ -99,9 +99,12 @@ def job_alimentar_fila() -> None:
 
 def job_auditar() -> None:
     from job_radar.auditoria.auditor import auditar
+    from job_radar.auditoria.testes_cli import executar_teste_pendente
     from job_radar.db import nova_sessao
 
     with nova_sessao() as sessao:
+        # Serializa CLI de teste e auditoria para caber no limite de memória do worker.
+        executar_teste_pendente(sessao)
         auditar(sessao)
 
 
