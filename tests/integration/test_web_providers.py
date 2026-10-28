@@ -148,7 +148,7 @@ def cadastrar_cli():
         return config.id
 
 
-@pytest.mark.parametrize("falha", [None, "chamada", "json"])
+@pytest.mark.parametrize("falha", [None, "chamada", "json", "interno"])
 def test_cli_solicitado_na_api_e_executado_no_worker(cliente, monkeypatch, falha):
     pid = cadastrar_cli()
     chamadas = []
@@ -161,6 +161,8 @@ def test_cli_solicitado_na_api_e_executado_no_worker(cliente, monkeypatch, falha
             chamadas.append(usuario)
             if falha == "chamada":
                 raise ErroProvider("login expirado")
+            if falha == "interno":
+                raise RuntimeError("falha inesperada")
             return RespostaProvider(
                 texto="sem JSON" if falha else '{"ok":true}', modelo="gpt-6-luna"
             )

@@ -1,5 +1,6 @@
 """A API solicita o teste; o worker autenticado executa antes de auditar vagas."""
 
+import logging
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -10,6 +11,8 @@ from job_radar.auditoria.providers import construir_provider
 from job_radar.auditoria.providers.base import ErroProvider, RespostaInvalida, extrair_json
 from job_radar.models import ProviderIA, Usuario
 from job_radar.models.enums import Papel, TipoProvider
+
+log = logging.getLogger(__name__)
 
 
 def resultado_teste(config: ProviderIA) -> dict | None:
@@ -58,5 +61,8 @@ def executar_teste_pendente(sessao: Session) -> None:
             }
         except (ErroProvider, RespostaInvalida) as erro:
             resultado = {"ok": False, "erro": str(erro)[:300]}
+        except Exception:
+            log.exception("falha inesperada no teste CLI", extra={"provider": str(config.id)})
+            resultado = {"ok": False, "erro": "Falha interna no teste. Consulte os logs do worker."}
     config.teste_conexao = resultado
     sessao.commit()
