@@ -63,8 +63,14 @@ function Usuarios() {
 
   return (
     <>
-      <section className="hero"><div><h1>Usuários</h1><p>Quem usa o Job Radar. Novas pessoas entram por convite, com link de uso único válido por 7 dias.</p></div></section>
+      <section className="hero"><div><h1>Usuários & convites</h1><p>Quem usa o Job Radar. Novas pessoas entram por convite, com link de uso único válido por 7 dias.</p></div></section>
 
+      <section className="stats-grid" aria-label="Resumo de acesso">
+        <div className="stat-card"><div className="stat-label">Usuários ativos</div><strong>{dados.usuarios.filter((u) => u.ativo).length}</strong><small>{dados.usuarios.length} cadastrado(s)</small></div>
+        <div className="stat-card"><div className="stat-label">Convites pendentes</div><strong>{dados.convites.filter((c) => c.situacao === 'pendente').length}</strong><small>nos últimos 50 convites</small></div>
+        <div className="stat-card"><div className="stat-label">Convites aceitos</div><strong>{dados.convites.filter((c) => c.situacao === 'usado').length}</strong><small>nos últimos 50 convites</small></div>
+        <div className="stat-card"><div className="stat-label">Acesso por convite</div><strong>7 dias</strong><small>validade de cada link de uso único</small></div>
+      </section>
       <section className="panel bloco">
         <div className="panel-heading"><div><h3>Convidar</h3><p>Envie o link para a pessoa; ela define o próprio nome e senha. Convidados usam os seus providers de IA.</p></div></div>
         <form className="convite-form" onSubmit={convidar}>

@@ -1,8 +1,8 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Job Radar: o mesmo radar da barra lateral (components/AppShell.tsx), com as cores do tema -->
-  <rect width="64" height="64" rx="14" fill="#22174c"/>
-  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" stroke="#6d4bd5" stroke-width="3"/>
-  <g transform="translate(12 12) scale(1.6667)" stroke="#c4b5fd" stroke-width="2.4" stroke-linecap="round">
+  <rect width="64" height="64" rx="14" fill="#18352d"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" stroke="#10b981" stroke-width="3"/>
+  <g transform="translate(12 12) scale(1.6667)" stroke="#4edea3" stroke-width="2.4" stroke-linecap="round">
     <path d="M4 12a8 8 0 1 0 16 0M7.5 12a4.5 4.5 0 1 0 9 0M12 12h.01"/>
     <path d="M12 12 20 4"/>
   </g>

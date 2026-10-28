@@ -78,10 +78,16 @@ function Fontes() {
   return (
     <>
       <section className="hero">
-        <div><h1>Fontes e coleta</h1><p>De onde vêm as vagas. As coletas agendadas rodam das 8h às 20h.</p></div>
+        <div><h1>Fontes & coletas</h1><p>De onde vêm as vagas. As coletas agendadas rodam das 8h às 20h.</p></div>
         <button className="outline-button" onClick={carregar}><RefreshCw size={15} /> Atualizar</button>
       </section>
 
+      <section className="stats-grid" aria-label="Resumo das fontes">
+        <div className="stat-card"><div className="stat-label">Fontes ativas</div><strong>{dados.fontes.filter((f) => f.ativa && f.implementada).length}</strong><small>{dados.fontes.length} cadastradas</small></div>
+        <div className="stat-card"><div className="stat-label">Em execução</div><strong>{dados.fontes.filter((f) => f.ultima?.status === 'rodando').length}</strong><small>coletas em andamento</small></div>
+        <div className="stat-card"><div className="stat-label">Vagas vistas</div><strong>{dados.execucoes.reduce((n, e) => n + e.coletadas, 0).toLocaleString('pt-BR')}</strong><small>nas últimas {dados.execucoes.length} execuções</small></div>
+        <div className="stat-card"><div className="stat-label">Vagas novas</div><strong>{dados.execucoes.reduce((n, e) => n + e.novas, 0).toLocaleString('pt-BR')}</strong><small>nas últimas {dados.execucoes.length} execuções</small></div>
+      </section>
       <div className="cartoes-fonte">
         {dados.fontes.map((f) => (
           <section className={`panel fonte ${f.ativa ? '' : 'fonte-off'}`} key={f.id}>

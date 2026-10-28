@@ -2,22 +2,16 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowUpRight, BriefcaseBusiness, CheckCircle2, Clock3, Send, ThumbsDown } from 'lucide-react'
-import { AppShell, useUsuario } from '@/components/AppShell'
+import { ArrowUpRight, BriefcaseBusiness, CheckCircle2, Clock3, Send, ThumbsDown, TriangleAlert, RefreshCw } from 'lucide-react'
+import { AppShell } from '@/components/AppShell'
 import { PainelVaga, TabelaVagas } from '@/components/Vagas'
 import { api } from '@/lib/api'
 import { type ListaVagas, type Resumo, tempoRelativo } from '@/lib/vagas'
-
-function saudacao() {
-  const hora = new Date().getHours()
-  return hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
-}
 
 const ICONE_ATIVIDADE = { recomendada: Send, confirmada: CheckCircle2, ignorada: ThumbsDown } as const
 const TEXTO_ATIVIDADE: Record<string, string> = { recomendada: 'Recomendada pela IA', confirmada: 'Você confirmou', ignorada: 'Você ignorou' }
 
 function VisaoGeral() {
-  const usuario = useUsuario()
   const [resumo, setResumo] = useState<Resumo | null>(null)
   const [recomendadas, setRecomendadas] = useState<ListaVagas | null>(null)
   const [aberta, setAberta] = useState<string | null>(null)
@@ -40,14 +34,22 @@ function VisaoGeral() {
   const c = resumo.contagens
   const ultimaColeta = resumo.fontes.map((f) => f.iniciada_em).filter(Boolean).sort().at(-1) ?? null
 
+  const totalFunil = c.recomendada + c.fila + c.pool + c.confirmada
+
   return (
     <>
       <section className="hero">
         <div>
-          <div className="eyebrow"><span className="live-dot" /> Radar ativo <span className="eyebrow-separator">·</span> última coleta {tempoRelativo(ultimaColeta)}</div>
-          <h1>{saudacao()}, {usuario?.nome.split(' ')[0]} <span className="wave">✦</span></h1>
-          <p>{c.recomendada > 0 ? `${c.recomendada} vaga(s) esperando a sua decisão.` : 'Nenhuma vaga esperando a sua decisão agora.'}</p>
+          <h1>Visão geral</h1>
+          <p>Acompanhe suas oportunidades, a auditoria por IA e as últimas coletas.</p>
         </div>
+        <button className="outline-button" onClick={carregar}><RefreshCw size={15} /> Atualizar</button>
+      </section>
+
+      <section className="notice">
+        <TriangleAlert size={22} />
+        <div><strong>{c.recomendada ? `${c.recomendada} vaga(s) recomendada(s) aguardando sua decisão` : 'Sua triagem está em dia'}</strong><p>{c.fila} na fila da IA · {c.pool} no pool · última coleta {tempoRelativo(ultimaColeta)}</p></div>
+        <Link className="outline-button" href="/vagas/">Ir para triagem <ArrowUpRight size={15} /></Link>
       </section>
 
       <section className="stats-grid">
@@ -57,14 +59,7 @@ function VisaoGeral() {
         <div className="stat-card"><div className="stat-icon purple"><BriefcaseBusiness size={18} /></div><div className="stat-label">Vagas novas hoje</div><strong>{resumo.vagas_novas_hoje}</strong><small>coletadas de {resumo.fontes.length} fonte(s)</small></div>
       </section>
 
-      <section className="section-heading">
-        <div><h2>Recomendadas</h2><p>Auditadas pela IA, da maior para a menor nota. Clique para ver o parecer.</p></div>
-        <Link className="text-button" href="/vagas/">Ver todas as vagas <ArrowUpRight size={15} /></Link>
-      </section>
-      <TabelaVagas itens={recomendadas.itens.slice(0, 8)} motivos={resumo.motivos_ignorar} aoAbrir={setAberta} aoDecidir={aoDecidir}
-        vazio="Nenhuma vaga recomendada agora. Novas coletas rodam de hora em hora, das 8h às 20h." />
-
-      <section className="bottom-grid">
+      <section className="dashboard-grid">
         <div className="panel">
           <div className="panel-heading"><div><h3>Saúde das fontes</h3><p>Última coleta de cada fonte</p></div></div>
           <div className="source-list">
@@ -78,6 +73,31 @@ function VisaoGeral() {
             ))}
           </div>
         </div>
+        <div className="panel">
+          <div className="panel-heading"><div><h3>Distribuição do funil</h3><p>Situação atual das suas oportunidades</p></div></div>
+          <div className="funnel-bar" aria-hidden="true">
+            <span style={{ width: `${totalFunil ? c.recomendada / totalFunil * 100 : 0}%` }} />
+            <span style={{ width: `${totalFunil ? c.fila / totalFunil * 100 : 0}%` }} />
+            <span style={{ width: `${totalFunil ? c.confirmada / totalFunil * 100 : 0}%` }} />
+            <span style={{ width: `${totalFunil ? c.pool / totalFunil * 100 : 0}%` }} />
+          </div>
+          <div className="funnel-list">
+            <Link href="/vagas/?status=recomendada"><i />Recomendadas<strong>{c.recomendada}</strong></Link>
+            <Link href="/vagas/?status=fila"><i />Na fila da IA<strong>{c.fila}</strong></Link>
+            <Link href="/vagas/?status=confirmada"><i />Confirmadas<strong>{c.confirmada}</strong></Link>
+            <Link href="/vagas/?status=pool"><i />No pool<strong>{c.pool}</strong></Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-heading">
+        <div><h2>Recomendadas</h2><p>Auditadas pela IA, da maior para a menor nota. Clique para ver o parecer.</p></div>
+        <Link className="text-button" href="/vagas/">Ver todas as vagas <ArrowUpRight size={15} /></Link>
+      </section>
+      <TabelaVagas itens={recomendadas.itens.slice(0, 8)} motivos={resumo.motivos_ignorar} aoAbrir={setAberta} aoDecidir={aoDecidir}
+        vazio="Nenhuma vaga recomendada agora. Novas coletas rodam de hora em hora, das 8h às 20h." />
+
+      <section className="activity-panel-wrap">
         <div className="panel activity-panel">
           <div className="panel-heading"><div><h3>Atividade recente</h3><p>Recomendações e decisões</p></div></div>
           <div className="activity-list">
