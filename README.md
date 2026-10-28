@@ -56,11 +56,13 @@ O coletor `jobspy` usa somente a busca pública do LinkedIn, sem conta pessoal. 
 }
 ```
 
-Os parâmetros ficam em `fonte.config`: até cinco buscas, termos e locais obrigatórios, janela de 1 a 720 horas e pausa entre buscas de 0 a 60 segundos. O limite em `fonte.max_itens_execucao` deve ficar entre 1 e 50 e vale para a execução inteira, com deduplicação entre buscas. Nesta primeira entrega a interface permite ativar/desativar e coletar, mas a edição das buscas ainda é feita no banco.
+O administrador pode alterar esses parâmetros em **Fontes e coleta → LinkedIn → Editar buscas**: até cinco buscas, termos e locais obrigatórios, janela de 1 a 720 horas e pausa entre buscas de 0 a 60 segundos. O limite total deve ficar entre 1 e 50 e vale para a execução inteira, com deduplicação entre buscas. As buscas seguem a ordem informada; ao atingir o limite, as demais não são consultadas naquela execução. Os campos são validados no servidor; não é possível salvar durante uma coleta em andamento. Salvar preserva a ativação e os horários da fonte, e a configuração passa a valer nas próximas execuções.
 
-Após executar `job-radar seed`, a fonte aparece em **Fontes e coleta**. Ative-a para permitir **Coletar agora** ou `job-radar coletar jobspy`. No ambiente local, reinicie o worker após habilitar a fonte para registrar seu agendamento. No Kubernetes, ainda será necessário adicionar o CronJob no `k8s-lab`; esta entrega não o cria nem ativa coleta em produção.
+Após executar `job-radar seed`, a fonte aparece em **Fontes e coleta**. Ative-a para permitir **Coletar agora** ou `job-radar coletar jobspy`. No ambiente local, reinicie o worker após habilitar a fonte para registrar seu agendamento. No lab Kubernetes, o CronJob `coletar-linkedin`, mantido no `k8s-lab`, agenda as execuções às 08h, 12h, 16h e 20h de Brasília. A edição das buscas não altera esse CronJob.
 
 Os filtros remoto e tipo de contrato não são enviados, pois a busca pública do LinkedIn não os suporta; o pré-filtro por usuário continua selecionando as vagas. Ausência de indicação de remoto não é tratada como confirmação de trabalho presencial. Erros reportados pelo JobSpy, inclusive bloqueios/429, deixam a execução com erro, sem repetição imediata pelo adaptador. Resultados parciais com erro são descartados para não registrar sucesso incompleto. Descrições são solicitadas, mas podem faltar quando a página de uma vaga falha.
+
+Para direcionar a coleta, use buscas separadas com termos como `estágio suporte remoto`, `Python remote` ou `internship`, e localização `Brazil` para ampliar a cobertura de vagas remotas. Esses termos são pistas de busca, não filtros garantidos. Regras do perfil e instruções da IA podem refinar as recomendações; dados ausentes exigem confirmação. O tipo `fulltime` do JobSpy descreve jornada, não comprova contratação CLT; CLT/PJ precisam de evidência no anúncio.
 
 ## Configurando a auditoria por IA
 

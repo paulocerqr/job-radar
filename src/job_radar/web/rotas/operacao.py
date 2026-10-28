@@ -13,6 +13,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import distinct_on
 
@@ -20,6 +21,7 @@ from job_radar.auditoria.providers import ProviderOpenAICompativel, construir_pr
 from job_radar.auditoria.providers.base import ErroProvider, RespostaInvalida, extrair_json
 from job_radar.coleta.base import fontes_registradas
 from job_radar.coleta.execucao import executar_coleta
+from job_radar.coleta.fontes.jobspy import ConfigJobSpy
 from job_radar.db import nova_sessao
 from job_radar.models import ExecucaoColeta, Fonte, ProviderIA, UsoProvider, Usuario
 from job_radar.models.enums import Papel, StatusExecucao, TipoProvider
@@ -120,6 +122,39 @@ def alterar_fonte(
     sessao.commit()
     log.info("fonte alterada", extra={"fonte": fonte_id, "ativa": fonte.ativa})
     return JSONResponse({"id": fonte.id, "ativa": fonte.ativa})
+
+
+class EditarBuscasJobSpy(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    config: ConfigJobSpy
+    max_itens: int = Field(ge=1, le=50, strict=True)
+
+
+@router.put("/fontes/jobspy/buscas", dependencies=ComCsrf)
+def editar_buscas_jobspy(
+    corpo: Annotated[dict[str, Any], Body()], usuario: UsuarioLogado, sessao: SessaoDB
+) -> JSONResponse:
+    if negado := _so_admin(usuario):
+        return negado
+    fonte = sessao.get(Fonte, "jobspy")
+    if fonte is None:
+        return JSONResponse({"erro": "fonte não encontrada"}, 404)
+    try:
+        dados = EditarBuscasJobSpy.model_validate(corpo)
+    except ValidationError:
+        return JSONResponse(
+            {"erro": "Configuração inválida. Confira os campos e limites informados."}, 422
+        )
+    if _rodando(sessao, fonte.id):
+        return JSONResponse(
+            {"erro": "Aguarde a coleta em andamento terminar para editar as buscas."}, 409
+        )
+    fonte.config = dados.config.model_dump()
+    fonte.max_itens_execucao = dados.max_itens
+    sessao.commit()
+    log.info("buscas do LinkedIn alteradas", extra={"fonte": fonte.id})
+    return JSONResponse({"config": fonte.config, "max_itens": fonte.max_itens_execucao})
 
 
 def _coletar_em_segundo_plano(fonte_id: str) -> None:
