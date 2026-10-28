@@ -13,6 +13,7 @@ from pathlib import Path
 from job_radar.auditoria.providers.base import ErroProvider, RespostaProvider
 
 MARCADOR_SAIDA = "{saida}"
+MARCADOR_MODELO = "{modelo}"
 
 
 class ProviderCLI:
@@ -26,7 +27,8 @@ class ProviderCLI:
         with tempfile.TemporaryDirectory(prefix="job-radar-cli-") as pasta:
             saida = Path(pasta) / "resposta.txt"
             argumentos = [
-                arg.replace(MARCADOR_SAIDA, str(saida)) for arg in shlex.split(self.comando)
+                arg.replace(MARCADOR_SAIDA, str(saida)).replace(MARCADOR_MODELO, self.modelo)
+                for arg in shlex.split(self.comando)
             ]
             try:
                 processo = subprocess.run(

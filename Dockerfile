@@ -11,6 +11,12 @@ COPY frontend/ ./
 RUN pnpm typecheck && pnpm build
 
 
+FROM node:24-slim AS codex
+RUN npm install --prefix /opt/codex --no-audit --no-fund @openai/codex@0.165.0 \
+    && cp /opt/codex/node_modules/@openai/codex-linux-*/vendor/*/bin/codex /codex \
+    && /codex --version
+
+
 FROM python:3.12-slim-bookworm AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /usr/local/bin/uv
 
@@ -36,6 +42,7 @@ RUN groupadd --system --gid 10001 app \
 
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --from=frontend --chown=app:app /frontend/out /app/frontend
+COPY --from=codex /codex /usr/local/bin/codex
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
