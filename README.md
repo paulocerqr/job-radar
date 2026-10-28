@@ -117,6 +117,14 @@ FRONTEND_DIR=$PWD/out uv run job-radar api   # a API serve o build em http://loc
 
 Com `pnpm dev`, as chamadas a `/api` são repassadas para a API em `127.0.0.1:8000`. Servindo o build pela API, reinicie a API depois de cada `pnpm build`: a CSP lista o hash dos scripts inline, calculado na inicialização.
 
+O frontend segue o visual Quayside do protótipo do Google Stitch, adaptado aos dados reais:
+
+- Visão geral e triagem: contagens atuais, funil, recomendações, decisões e saúde das últimas coletas.
+- Perfil: quantidade de palavras, níveis e critérios editados; simulação e vínculo do Telegram existentes.
+- Providers: prioridade, requisições, tokens e erros; fontes: coletas e histórico; usuários: acesso e convites.
+
+Os totais de fontes se referem às últimas 30 execuções; os de convites, aos últimos 50 registros. O protótipo também sugere séries históricas, custos em dinheiro, latência média, previsões de próxima coleta, ações em lote e configurações globais: esses recursos não foram incluídos porque não têm suporte nos endpoints atuais. Os gráficos e números ilustrativos do Stitch não são usados como dados da aplicação.
+
 ## CI
 
 `.github/workflows/ci.yml`: lint e testes (com Postgres) em todo push e PR. Em push na `main`, publica `ghcr.io/paulocerqr/job-radar` com as tags `<sha>` e `latest`.
