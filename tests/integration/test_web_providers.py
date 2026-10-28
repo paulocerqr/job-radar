@@ -1,11 +1,14 @@
 """Requer Postgres: cadastro, edição e remoção de providers pela Web UI."""
 
 import socket
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from job_radar.auditoria import testes_cli
+from job_radar.auditoria.providers.base import ErroProvider, RespostaProvider
 from job_radar.config import get_settings
 from job_radar.db import nova_sessao
 from job_radar.models import ProviderIA, Usuario
@@ -14,6 +17,7 @@ from job_radar.web import providers_web
 from job_radar.web.app import create_app
 from job_radar.web.rotas import operacao
 from job_radar.web.sessao import limite_login
+from job_radar.worker.main import job_auditar
 
 IPS = {"api.publica.dev": "8.8.8.8", "interno.dev": "169.254.169.254", "local.dev": "10.0.0.5"}
 
@@ -123,6 +127,106 @@ def test_provider_cli_so_pelo_terminal_e_de_outro_usuario_nao(cliente):
     assert cliente.patch(f"/api/providers/{codex}", json={"ativo": False}).status_code == 200
     assert cliente.patch(f"/api/providers/{dele}", json={"modelo": "x"}).status_code == 404
     assert cliente.request("DELETE", f"/api/providers/{dele}", json={}).status_code == 404
+    assert cliente.post(f"/api/providers/{dele}/testar", json={}).status_code == 404
+    assert cliente.get(f"/api/providers/{dele}/teste").status_code == 404
+
+
+def cadastrar_cli():
+    with nova_sessao() as sessao:
+        dono = sessao.scalar(select(Usuario).where(Usuario.email == "admin@teste.local"))
+        config = ProviderIA(
+            usuario_id=dono.id,
+            nome="codex",
+            tipo="cli",
+            modelo="gpt-6-luna",
+            comando="codex",
+            prioridade=1,
+            ativo=False,
+        )
+        sessao.add(config)
+        sessao.commit()
+        return config.id
+
+
+@pytest.mark.parametrize("falha", [None, "chamada", "json", "interno"])
+def test_cli_solicitado_na_api_e_executado_no_worker(cliente, monkeypatch, falha):
+    pid = cadastrar_cli()
+    chamadas = []
+
+    def nunca_na_api(config):
+        pytest.fail("a API não pode executar o CLI")
+
+    class Falso:
+        def completar(self, sistema, usuario):
+            chamadas.append(usuario)
+            if falha == "chamada":
+                raise ErroProvider("login expirado")
+            if falha == "interno":
+                raise RuntimeError("falha inesperada")
+            return RespostaProvider(
+                texto="sem JSON" if falha else '{"ok":true}', modelo="gpt-6-luna"
+            )
+
+    monkeypatch.setattr(operacao, "construir_provider", nunca_na_api)
+    monkeypatch.setattr(testes_cli, "construir_provider", lambda config: Falso())
+    assert cliente.get(f"/api/providers/{pid}/teste").status_code == 404
+    r = cliente.post(f"/api/providers/{pid}/testar", json={})
+    assert r.status_code == 202 and r.json()["pendente"]
+    assert cliente.post(f"/api/providers/{pid}/testar", json={}).json() == r.json()
+    assert not chamadas
+    assert cliente.get(f"/api/providers/{pid}/teste").json()["pendente"]
+    job_auditar()
+    resultado = cliente.get(f"/api/providers/{pid}/teste").json()
+    assert resultado["ok"] == (falha is None)
+    assert "pendente" not in resultado
+    if falha is None:
+        assert resultado["modelo"] == "gpt-6-luna"
+    else:
+        assert resultado["erro"]
+    job_auditar()
+    assert chamadas == ["teste de conexão"]
+    with nova_sessao() as sessao:
+        assert not sessao.get(ProviderIA, pid).ativo
+
+
+def test_cli_pedido_expirado_nao_executa_e_pode_ser_repetido(cliente, monkeypatch):
+    pid = cadastrar_cli()
+    with nova_sessao() as sessao:
+        sessao.get(ProviderIA, pid).teste_conexao = {
+            "pendente": True,
+            "solicitado_em": (datetime.now(UTC) - timedelta(minutes=16)).isoformat(),
+        }
+        sessao.commit()
+    monkeypatch.setattr(testes_cli, "construir_provider", lambda config: pytest.fail("expirado"))
+    r = cliente.get(f"/api/providers/{pid}/teste").json()
+    assert not r["ok"] and "15 minutos" in r["erro"]
+    job_auditar()
+    assert cliente.get(f"/api/providers/{pid}/teste").json() == r
+    assert cliente.post(f"/api/providers/{pid}/testar", json={}).json()["pendente"]
+
+
+def test_cli_em_execucao_pode_ser_consultado_sem_duplicar(cliente, monkeypatch):
+    pid = cadastrar_cli()
+    pendente = cliente.post(f"/api/providers/{pid}/testar", json={}).json()
+    monkeypatch.setattr(testes_cli, "construir_provider", lambda config: pytest.fail("travado"))
+    with nova_sessao() as sessao:
+        sessao.scalar(select(ProviderIA).where(ProviderIA.id == pid).with_for_update())
+        assert cliente.get(f"/api/providers/{pid}/teste").json() == pendente
+        assert cliente.post(f"/api/providers/{pid}/testar", json={}).json() == pendente
+        with nova_sessao() as outra:
+            testes_cli.executar_teste_pendente(outra)
+
+
+def test_cli_nao_executa_apos_usuario_perder_papel_admin(cliente, monkeypatch):
+    pid = cadastrar_cli()
+    cliente.post(f"/api/providers/{pid}/testar", json={})
+    with nova_sessao() as sessao:
+        config = sessao.get(ProviderIA, pid)
+        sessao.get(Usuario, config.usuario_id).papel = "usuario"
+        sessao.commit()
+    monkeypatch.setattr(testes_cli, "construir_provider", lambda config: pytest.fail("não admin"))
+    assert cliente.post(f"/api/providers/{pid}/testar", json={}).status_code == 403
+    job_auditar()
 
 
 def test_listar_modelos(cliente, monkeypatch):

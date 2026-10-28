@@ -2,6 +2,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import CheckConstraint, ForeignKey, LargeBinary, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from job_radar.models.base import Base, ComCriadoEm, ComUUID, check_enum
@@ -37,6 +38,7 @@ class ProviderIA(ComUUID, ComCriadoEm, Base):
     ativo: Mapped[bool] = mapped_column(default=True, server_default="true")
     ultimo_erro: Mapped[str | None]
     ultimo_erro_em: Mapped[datetime | None]
+    teste_conexao: Mapped[dict | None] = mapped_column(JSONB)
 
 
 class UsoProvider(Base):

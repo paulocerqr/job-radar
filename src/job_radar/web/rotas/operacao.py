@@ -19,6 +19,7 @@ from sqlalchemy.dialects.postgresql import distinct_on
 
 from job_radar.auditoria.providers import ProviderOpenAICompativel, construir_provider
 from job_radar.auditoria.providers.base import ErroProvider, RespostaInvalida, extrair_json
+from job_radar.auditoria.testes_cli import resultado_teste
 from job_radar.coleta.base import fontes_registradas
 from job_radar.coleta.execucao import executar_coleta
 from job_radar.coleta.fontes.jobspy import ConfigJobSpy
@@ -254,6 +255,25 @@ def testar_provider(
     config = _do_usuario(sessao, usuario, provider_id)
     if config is None:
         return JSONResponse({"erro": "provider não encontrado"}, 404)
+    if config.tipo == TipoProvider.CLI:
+        if usuario.papel != Papel.ADMIN:
+            return JSONResponse({"erro": "provider CLI é exclusivo do admin"}, 403)
+        teste = resultado_teste(config)
+        if not teste or not teste.get("pendente"):
+            config = sessao.scalar(
+                select(ProviderIA)
+                .where(ProviderIA.id == config.id)
+                .with_for_update(skip_locked=True)
+                .execution_options(populate_existing=True)
+            )
+            if config is None:
+                return JSONResponse({"erro": "provider ocupado; tente novamente"}, 409)
+            teste = resultado_teste(config)
+            if not teste or not teste.get("pendente"):
+                teste = {"pendente": True, "solicitado_em": datetime.now(UTC).isoformat()}
+                config.teste_conexao = teste
+                sessao.commit()
+        return JSONResponse(teste, 202)
     inicio = time.monotonic()
     try:
         resposta = construir_provider(config).completar(
@@ -265,6 +285,19 @@ def testar_provider(
         return JSONResponse({"ok": False, "erro": str(erro)[:300]})
     return JSONResponse(
         {"ok": True, "segundos": round(time.monotonic() - inicio, 1), "modelo": resposta.modelo}
+    )
+
+
+@router.get("/providers/{provider_id}/teste")
+def consultar_teste_provider(
+    provider_id: uuid.UUID, usuario: UsuarioLogado, sessao: SessaoDB
+) -> JSONResponse:
+    config = _do_usuario(sessao, usuario, provider_id)
+    if config is None:
+        return JSONResponse({"erro": "provider não encontrado"}, 404)
+    return JSONResponse(
+        resultado_teste(config) or {"erro": "nenhum teste solicitado"},
+        200 if config.teste_conexao else 404,
     )
 
 
