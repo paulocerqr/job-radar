@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { CheckCircle2, Play, RefreshCw } from 'lucide-react'
+import { CheckCircle2, Pencil, Play, RefreshCw } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
+import { FormBuscasJobSpy, type ConfigBuscasJobSpy } from '@/components/FormBuscasJobSpy'
 import { api, ErroApi } from '@/lib/api'
 import { tempoRelativo } from '@/lib/vagas'
 
@@ -39,6 +40,7 @@ function parametros(config: Record<string, unknown>): string[] {
 function Fontes() {
   const [dados, setDados] = useState<Dados | null>(null)
   const [toast, setToast] = useState('')
+  const [editando, setEditando] = useState(false)
 
   const carregar = useCallback(() => api<Dados>('/fontes').then(setDados), [])
   useEffect(() => { carregar() }, [carregar])
@@ -90,7 +92,7 @@ function Fontes() {
       </section>
       <div className="cartoes-fonte">
         {dados.fontes.map((f) => (
-          <section className={`panel fonte ${f.ativa ? '' : 'fonte-off'}`} key={f.id}>
+          <section className={`panel fonte ${f.ativa ? '' : 'fonte-off'} ${f.id === 'jobspy' && editando ? 'fonte-editando' : ''}`} key={f.id}>
             <div className="fonte-topo">
               <div className="source-badge gupy">{f.nome.slice(0, 1)}</div>
               <div className="fonte-nome"><strong>{f.nome}</strong><small>{f.implementada ? `a cada ${f.intervalo_min} min · até ${f.max_itens} vagas` : 'coletor ainda não implementado'}</small></div>
@@ -113,10 +115,14 @@ function Fontes() {
             ) : f.implementada && <p className="dica">Nenhuma coleta ainda.</p>}
             {f.ultima?.erro && <p className="fonte-erro">{f.ultima.erro.slice(0, 240)}</p>}
             {f.implementada && dados.pode_alterar && (
-              <button className="outline-button" disabled={!f.ativa || f.ultima?.status === 'rodando'} onClick={() => coletar(f)}>
-                <Play size={14} /> {f.ultima?.status === 'rodando' ? 'Coletando…' : 'Coletar agora'}
-              </button>
+              <div className="acoes-linha">
+                <button className="outline-button" disabled={!f.ativa || f.ultima?.status === 'rodando' || (f.id === 'jobspy' && editando)} onClick={() => coletar(f)}>
+                  <Play size={14} /> {f.ultima?.status === 'rodando' ? 'Coletando…' : 'Coletar agora'}
+                </button>
+                {f.id === 'jobspy' && !editando && <button className="outline-button" disabled={f.ultima?.status === 'rodando'} onClick={() => setEditando(true)}><Pencil size={14} /> Editar buscas</button>}
+              </div>
             )}
+            {f.id === 'jobspy' && editando && dados.pode_alterar && <FormBuscasJobSpy inicial={f.config as ConfigBuscasJobSpy} limite={f.max_itens} aoCancelar={() => setEditando(false)} aoSalvar={() => { setEditando(false); avisar('Buscas salvas para as próximas coletas.'); carregar() }} />}
           </section>
         ))}
       </div>

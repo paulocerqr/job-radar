@@ -230,6 +230,11 @@ button.activity-item { width: 100%; text-align: left; cursor: pointer; } button.
 .grade-4 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .botao-neutro.perigo { margin-left: auto; color: #fda4af; border-color: #5a2230; } .botao-neutro.perigo:hover { background: #2a1219; }
 .form-provider button.chip { cursor: pointer; }
+.fonte-editando { grid-column: 1 / -1; opacity: 1; }
+.form-buscas { display: grid; gap: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.buscas-campos { display: grid; gap: 16px; min-width: 0; padding: 0; margin: 0; border: 0; }
+.busca-item { padding: 16px; margin: 0; border: 1px solid var(--border); border-radius: 4px; min-width: 0; }
+.fonte .acoes-linha .outline-button, .fonte .form-buscas .outline-button { width: auto; margin-top: 0; }
 .campo { align-content: start; }
 /* Estrutura compartilhada e estados responsivos. */
 body { font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums; }
