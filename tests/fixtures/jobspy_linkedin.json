@@ -1,0 +1,28 @@
+[
+  {
+    "id": "li-1001",
+    "site": "linkedin",
+    "job_url": "https://www.linkedin.com/jobs/view/1001?trackingId=teste",
+    "title": "Estágio em Suporte de TI",
+    "company": "Acme Tecnologia Ltda",
+    "location": "Brasília, Federal District, Brazil",
+    "date_posted": "2026-10-27",
+    "description": "Atendimento de suporte e automação com Python.",
+    "is_remote": true,
+    "job_level": "entry level",
+    "job_type": "internship"
+  },
+  {
+    "id": "li-1002",
+    "site": "linkedin",
+    "job_url": "https://www.linkedin.com/jobs/view/1002",
+    "title": "Analista de Sistemas",
+    "company": "Outra Empresa",
+    "location": "São Paulo, São Paulo, Brazil",
+    "date_posted": null,
+    "description": null,
+    "is_remote": false,
+    "job_level": null,
+    "job_type": null
+  }
+]

@@ -86,3 +86,72 @@ def test_falha_http_registra_erro(banco_com_seed):
         assert execucao.status == StatusExecucao.ERRO
         assert "503" in execucao.erro
         assert sessao.get(Fonte, "gupy").ultima_execucao_em is not None
+
+
+def test_jobspy_persiste_normaliza_e_nao_duplica(banco_com_seed, monkeypatch):
+    import pandas as pd
+
+    itens = json.loads((FIXTURES / "jobspy_linkedin.json").read_text())
+    quadro = pd.DataFrame(itens)
+    monkeypatch.setattr("jobspy.scrape_jobs", lambda **_: quadro)
+    with nova_sessao() as sessao:
+        primeira = executar_coleta(sessao, "jobspy", agora=AGORA)
+        assert primeira.status == StatusExecucao.OK
+        assert primeira.itens_novos == 2
+        vaga = sessao.scalar(select(Vaga).where(Vaga.titulo == itens[0]["title"]))
+        assert vaga.uf == "DF"
+        assert vaga.publicada_em.tzinfo is not None
+        assert vaga.descricao == itens[0]["description"]
+        assert contar(sessao, VagaFonte) == 2
+        assert contar(sessao, VagaUsuario) == 2
+        segunda = executar_coleta(sessao, "jobspy", agora=AGORA)
+        assert segunda.itens_novos == 0 and segunda.itens_duplicados == 2
+        assert contar(sessao, Vaga) == 2
+        assert contar(sessao, VagaUsuario) == 2
+
+
+def test_jobspy_deduplica_vaga_ja_coletada_pela_gupy(banco_com_seed, monkeypatch):
+    import pandas as pd
+
+    from job_radar.coleta.fontes.gupy import mapear
+
+    item = json.loads((FIXTURES / "gupy_jobs.json").read_text())["data"][0]
+    gupy = mapear(item)
+    quadro = pd.DataFrame(
+        [
+            {
+                "job_url": "https://www.linkedin.com/jobs/view/4001",
+                "title": gupy.titulo,
+                "company": gupy.empresa,
+                "location": f"{gupy.cidade}, Federal District, Brazil",
+                "is_remote": False,
+            }
+        ]
+    )
+    monkeypatch.setattr("jobspy.scrape_jobs", lambda **_: quadro)
+    with nova_sessao() as sessao:
+        sessao.get(Fonte, "gupy").config = {"termos": ["ti"], "pausa_s": 0}
+        sessao.commit()
+        executar_coleta(sessao, "gupy", http=cliente_gupy(), agora=AGORA)
+        segunda = executar_coleta(sessao, "jobspy", agora=AGORA)
+        assert segunda.status == StatusExecucao.OK
+        assert segunda.itens_novos == 0 and segunda.itens_duplicados == 1
+        assert contar(sessao, Vaga) == 5 and contar(sessao, VagaFonte) == 6
+        assert contar(sessao, VagaUsuario) == 1
+
+
+def test_falha_jobspy_nao_bloqueia_outras_fontes(banco_com_seed, monkeypatch):
+    import pandas as pd
+
+    quadro = pd.DataFrame()
+    quadro.attrs["errors"] = {"linkedin": "HTTP 429"}
+    monkeypatch.setattr("jobspy.scrape_jobs", lambda **_: quadro)
+    with nova_sessao() as sessao:
+        erro = executar_coleta(sessao, "jobspy", agora=AGORA)
+        assert erro.status == StatusExecucao.ERRO and "429" in erro.erro
+        assert erro.finalizada_em is not None
+        assert sessao.get(Fonte, "jobspy").ultima_execucao_em is not None
+        sessao.get(Fonte, "gupy").config = {"termos": ["ti"], "pausa_s": 0}
+        sessao.commit()
+        outra = executar_coleta(sessao, "gupy", http=cliente_gupy(), agora=AGORA)
+        assert outra.status == StatusExecucao.OK and outra.itens_novos == 5
