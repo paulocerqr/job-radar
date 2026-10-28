@@ -45,12 +45,16 @@ PRESETS: dict[str, Preset] = {
     ),
     "codex": Preset(
         tipo=TipoProvider.CLI,
-        # somente leitura, sem salvar sessão; o prompt vai pelo stdin ("-")
+        # Classificação sem ferramentas, plugins ou instruções pessoais; mantém só o login.
         comando=(
-            "codex exec --skip-git-repo-check --ephemeral --sandbox read-only"
+            "codex exec --model {modelo} --ignore-user-config --ignore-rules"
+            " --disable shell_tool --disable multi_agent --disable plugins"
+            " -c web_search=disabled -c project_doc_max_bytes=0"
+            " -c 'log_dir=\"{saida}.logs\"'"
+            " --skip-git-repo-check --ephemeral --sandbox read-only"
             " --color never -o {saida} -"
         ),
-        modelo="codex (modelo padrão da conta)",
+        modelo="gpt-6-luna",
         timeout_s=300,
     ),
 }

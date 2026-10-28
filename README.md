@@ -75,7 +75,7 @@ docker compose run --rm api chave-fernet
 job-radar provider adicionar groq --preset groq --api-key-env GROQ_API_KEY
 job-radar provider adicionar nvidia --preset nvidia --api-key-env NVIDIA_API_KEY
 job-radar provider adicionar gemini --preset gemini --api-key-env GEMINI_API_KEY
-job-radar provider adicionar codex --preset codex     # CLI local, só para o admin
+job-radar provider adicionar codex-luna --preset codex # Codex CLI com gpt-6-luna, só para o admin
 
 job-radar provider listar
 job-radar provider testar groq
@@ -86,7 +86,18 @@ job-radar perfil curriculo curriculo.md
 
 Os presets trazem modelo e limites iniciais. Modelos são aposentados com frequência: se o `testar` falhar com 404/410, liste os disponíveis com `job-radar provider modelos <nome>` e troque com `job-radar provider editar <nome> --modelo ...`. O worker audita um lote por usuário a cada minuto; `job-radar auditar` roda uma rodada na hora.
 
-> O preset `codex` usa o Codex CLI autenticado na máquina, em modo somente leitura, sem salvar sessão e numa pasta temporária vazia. Não funciona dentro do container: use-o rodando `job-radar worker` no host.
+O preset `codex` usa `gpt-6-luna` pelo Codex CLI 0.165.0, incluído na imagem Docker. Cada auditoria roda em uma pasta temporária, em modo somente leitura e sem shell, web, plugins ou agentes auxiliares. A configuração pessoal e as instruções de arquivos AGENTS.md não são carregadas; os logs locais daquela chamada ficam na pasta temporária e são removidos ao final. O login do ChatGPT continua sendo reutilizado pelo CLI. O modelo vai pelo marcador `{modelo}` do comando, portanto `provider editar codex-luna --modelo ...` também muda o modelo realmente executado quando o comando contém esse marcador. Providers antigos não têm seu comando atualizado automaticamente.
+
+No host, autentique com `codex login` e use `job-radar provider testar codex-luna`. No lab, o worker possui `CODEX_HOME` em um PVC exclusivo, que permite ao CLI renovar o login sem colocar tokens na imagem, no Git ou nos manifests:
+
+```bash
+kubectl -n job-radar exec -it deploy/worker -- sh -c 'umask 077; mkdir -p "$CODEX_HOME"; exec codex login --device-auth'
+kubectl -n job-radar exec deploy/worker -- job-radar provider testar codex-luna
+```
+
+O login exige concluir a autenticação no navegador e a opção de device code habilitada na conta. O cadastro e o teste desse provider devem ser feitos no ambiente do worker autenticado; as réplicas da API não recebem essa sessão. Providers CLI continuam exclusivos do admin e não são usados como fallback dos convidados. O worker precisa de memória para o processo do CLI além da sua própria; o lab reserva limite de 512 MiB após medir aproximadamente 300 MiB no CLI isolado. O volume usa `pd-balanced` com retenção: removê-lo exige cuidar também do disco, e perder o cache exige novo login.
+
+O CLI envia os dados da auditoria à OpenAI: usar login do ChatGPT não transforma a análise em processamento offline. As cotas do login se aplicam; os demais providers continuam disponíveis na cascata se o Codex falhar.
 
 ## Notificações pelo Telegram
 

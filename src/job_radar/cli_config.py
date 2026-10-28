@@ -60,7 +60,9 @@ def adicionar(
     tipo: TipoProvider | None = typer.Option(None),
     base_url: str | None = typer.Option(None),
     modelo: str | None = typer.Option(None),
-    comando: str | None = typer.Option(None, help="Só para tipo cli; use {saida} p/ arquivo"),
+    comando: str | None = typer.Option(
+        None, help="Só para tipo cli; {saida} indica arquivo de resposta e {modelo} o modelo"
+    ),
     api_key_env: str | None = typer.Option(
         None, help="Variável (ambiente ou .env) com a chave; evita a chave no histórico"
     ),

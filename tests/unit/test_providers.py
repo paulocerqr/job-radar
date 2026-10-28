@@ -1,4 +1,5 @@
 import json
+import shlex
 import sys
 
 import httpx
@@ -161,3 +162,28 @@ def test_cli_comando_inexistente_nao_e_transitorio():
 def test_cli_timeout():
     with pytest.raises(ErroProvider, match="tempo esgotado"):
         ProviderCLI(comando_python("import time; time.sleep(5)"), "fake", 1).completar("s", "u")
+
+
+def test_cli_substitui_modelo_sem_transformar_em_comando():
+    modelo = "gpt-6-luna; echo nao-executar"
+    codigo = (
+        'import sys, json; print(json.dumps({"modelo": sys.argv[1], "prompt": sys.stdin.read()}))'
+    )
+    resposta = ProviderCLI(comando_python(codigo) + " {modelo}", modelo).completar("s", "u")
+    assert extrair_json(resposta.texto) == {"modelo": modelo, "prompt": "s\n\nu"}
+    assert resposta.modelo == modelo
+
+
+def test_preset_codex_seleciona_luna_e_isola_configuracao_pessoal():
+    from job_radar.auditoria.presets import PRESETS
+
+    preset = PRESETS["codex"]
+    args = shlex.split(preset.comando)
+    assert preset.modelo == "gpt-6-luna"
+    assert args[args.index("--model") + 1] == "{modelo}"
+    assert "--ignore-user-config" in args and "--ignore-rules" in args
+    assert args[args.index("--sandbox") + 1] == "read-only"
+    assert "--ephemeral" in args
+    assert "shell_tool" in args and "multi_agent" in args and "plugins" in args
+    assert "web_search=disabled" in args and "project_doc_max_bytes=0" in args
+    assert 'log_dir="{saida}.logs"' in args
