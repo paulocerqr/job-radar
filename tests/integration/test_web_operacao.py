@@ -55,6 +55,10 @@ def test_lista_fontes_com_ultima_execucao(admin):
     gupy = next(f for f in r["fontes"] if f["id"] == "gupy")
     assert gupy["ultima"]["novas"] == 2 and gupy["implementada"] is True
     assert next(f for f in r["fontes"] if f["id"] == "greenhouse")["implementada"] is False
+    linkedin = next(f for f in r["fontes"] if f["id"] == "jobspy")
+    assert linkedin["implementada"] is True and linkedin["ativa"] is False
+    assert linkedin["config"]["horas"] == 72
+    assert admin.post("/api/fontes/jobspy/coletar", json={}).status_code == 409
 
 
 def test_desativar_fonte_e_cli_respeita(admin):
