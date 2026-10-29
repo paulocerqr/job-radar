@@ -1,161 +1,106 @@
 # Job Radar
 
-Busca vagas de estágio/emprego em várias fontes, audita cada uma com IA de acordo com o seu perfil e envia as recomendadas pelo Telegram. O sistema **não se candidata automaticamente**: quem confirma é você.
+Encontre vagas de estágio e emprego compatíveis com o seu perfil. O Job Radar reúne anúncios de várias fontes, aplica um pré-filtro, analisa a aderência ao currículo com IA e apresenta as recomendações na interface web e no Telegram.
 
-- Plano completo (requisitos, regras de negócio, schema, decisões): [`docs/PLANO.md`](docs/PLANO.md)
-- Deploy em Kubernetes (lab na GCP): [`docs/K8S-LAB.md`](docs/K8S-LAB.md)
-- CI/CD (GitHub Actions, GHCR, fluxo de PR): [`docs/CI-CD.md`](docs/CI-CD.md)
+A candidatura é feita por você: o sistema ajuda na descoberta e na triagem, sem se candidatar automaticamente.
 
-**Status:** MVP (Fase 1) funcional: coleta (Gupy, Solides, GitHub), pré-filtro, fila, auditoria por IA (Codex, Groq, NVIDIA, Gemini) e notificações no Telegram. Web UI (Fase 2) em Next.js: Visão geral, Vagas (com o parecer da IA e as decisões), Meu perfil (com vínculo do Telegram), Providers de IA, Fontes e coleta, Usuários (cadastro por convite).
+## Teste a plataforma
 
-## Rodando com Docker Compose
+Acesse **[jobradar-lab.utileasy.com.br](https://jobradar-lab.utileasy.com.br)** com a conta pública de demonstração:
 
-```bash
-cp .env.example .env        # ajuste senhas e ADMIN_EMAIL
-docker compose up -d --build
-docker compose run --rm api seed   # fontes + usuário admin (idempotente)
-
-curl localhost:8000/healthz   # {"status":"ok"}
-curl localhost:8000/readyz    # {"status":"ok","banco":"ok"}
-```
-
-Serviços: `postgres`, `migrar` (aplica as migrations e sai), `api` e `worker` (sempre 1 réplica).
-
-## Comandos
-
-Uma única imagem, com comandos diferentes:
-
-| Comando | O que faz |
+| Campo | Valor |
 |---|---|
-| `job-radar api` | Sobe a API (FastAPI) |
-| `job-radar worker` | Sobe o scheduler (APScheduler) |
-| `job-radar worker-saude` | Sai com 0 se o heartbeat do worker for recente (healthcheck/probe) |
-| `job-radar migrar [revisao]` | Aplica as migrations e sai |
-| `job-radar seed` | Cria fontes e o usuário admin |
-| `job-radar coletar <fonte>` | Executa uma coleta e sai (CronJob no Kubernetes) |
-| `job-radar alimentar` | Move as melhores vagas do pool para a fila |
-| `job-radar expirar` | Expira vagas além do TTL |
-| `job-radar auditar` | Uma rodada de auditoria por IA |
-| `job-radar provider ...` | Cadastra, lista, testa e remove providers de IA |
-| `job-radar perfil ...` | Mostra o perfil e define o currículo |
-| `job-radar chave-fernet` | Gera uma `FERNET_KEY` |
-| `job-radar telegram vincular` | Gera o link que vincula o seu chat do Telegram |
-| `job-radar notificar` / `resumo` | Envia as recomendações pendentes / o resumo do dia agora |
+| E-mail | `usuario_teste@gmail.com` |
+| Senha | `usuarioteste01` |
 
-Toda a configuração vem de variáveis de ambiente (ver `.env.example`).
+Para explorar o sistema:
 
-## LinkedIn via JobSpy (experimental)
+1. Consulte **Visão geral** para acompanhar o funil e as recomendações.
+2. Abra **Vagas** para ver os anúncios, os pareceres da IA e registrar decisões.
+3. Explore **Meu perfil** para conhecer os critérios usados na seleção. Há um [currículo fictício de estágio fullstack](https://github.com/paulocerqr/k8s-lab/blob/main/docs/curriculo-teste.md) disponível para teste.
 
-O coletor `jobspy` usa somente a busca pública do LinkedIn, sem conta pessoal. O `seed` cadastra a fonte **desativada**, com intervalo de 240 minutos, limite total de 20 vagas e esta configuração:
+A conta é compartilhada entre visitantes; alterações podem aparecer para outras pessoas. Use apenas dados fictícios e preserve as credenciais. A demonstração depende da disponibilidade do ambiente do lab; a instalação local usa suas próprias credenciais.
 
-```json
-{
-  "buscas": [{"termo": "estágio tecnologia", "local": "Brasília, Distrito Federal, Brazil"}],
-  "horas": 72,
-  "pausa_s": 5
-}
+## Funcionalidades
+
+- **Coleta de vagas:** Gupy, Solides e GitHub; LinkedIn via JobSpy em caráter experimental, desativado por padrão.
+- **Seleção por perfil:** pré-filtro, fila de análise e auditoria por IA comparando vaga, currículo e critérios do usuário.
+- **Providers de IA:** Groq, NVIDIA e Gemini, com prioridades e fallback; integração com Codex CLI exclusiva do administrador.
+- **Interface web:** visão geral, vagas e pareceres, decisões, perfil, providers, fontes e histórico de coleta. Administração de usuários por convite.
+- **Telegram:** vínculo de conta, recomendações com ações, resumo diário e consulta de status.
+- **Operação:** migrations, healthchecks, coleta por scheduler ou CronJobs e deploy em Docker Compose ou Kubernetes.
+
+## Arquitetura
+
+```mermaid
+flowchart TB
+    Fontes["Gupy · Solides · GitHub<br/>LinkedIn experimental"] --> Coleta["Coleta e deduplicação"]
+    Coleta --> Filtro["Pré-filtro por perfil"]
+    Filtro --> Fila["Fila de auditoria"]
+    Fila --> IA["Análise por IA<br/>Currículo e critérios do usuário"]
+    IA --> Recomendacoes["Recomendações e pareceres"]
+    Recomendacoes --> Web["Interface web"]
+    Recomendacoes --> Telegram["Telegram"]
 ```
 
-O administrador pode alterar esses parâmetros em **Fontes e coleta → LinkedIn → Editar buscas**: até cinco buscas, termos e locais obrigatórios, janela de 1 a 720 horas e pausa entre buscas de 0 a 60 segundos. O limite total deve ficar entre 1 e 50 e vale para a execução inteira, com deduplicação entre buscas. As buscas seguem a ordem informada; ao atingir o limite, as demais não são consultadas naquela execução. Os campos são validados no servidor; não é possível salvar durante uma coleta em andamento. Salvar preserva a ativação e os horários da fonte, e a configuração passa a valer nas próximas execuções.
+O PostgreSQL persiste usuários, perfis, vagas, análises e decisões. A mesma imagem executa a API, o worker e os comandos de administração. O frontend é exportado como arquivos estáticos e servido pela própria API; Node.js é necessário apenas no build ou no desenvolvimento do frontend.
 
-Após executar `job-radar seed`, a fonte aparece em **Fontes e coleta**. Ative-a para permitir **Coletar agora** ou `job-radar coletar jobspy`. No ambiente local, reinicie o worker após habilitar a fonte para registrar seu agendamento. No lab Kubernetes, o CronJob `coletar-linkedin`, mantido no `k8s-lab`, agenda as execuções às 08h, 12h, 16h e 20h de Brasília. A edição das buscas não altera esse CronJob.
+| Camada | Tecnologias |
+|---|---|
+| Backend | Python 3.12+, FastAPI, Pydantic e Typer |
+| Frontend | Next.js, React e TypeScript |
+| Persistência | PostgreSQL, SQLAlchemy e Alembic |
+| Agendamento | APScheduler; CronJobs no Kubernetes |
+| Empacotamento e CI/CD | Docker, GitHub Actions e GHCR |
 
-Os filtros remoto e tipo de contrato não são enviados, pois a busca pública do LinkedIn não os suporta; o pré-filtro por usuário continua selecionando as vagas. Ausência de indicação de remoto não é tratada como confirmação de trabalho presencial. Erros reportados pelo JobSpy, inclusive bloqueios/429, deixam a execução com erro, sem repetição imediata pelo adaptador. Resultados parciais com erro são descartados para não registrar sucesso incompleto. Descrições são solicitadas, mas podem faltar quando a página de uma vaga falha.
+No [lab Kubernetes](https://github.com/paulocerqr/k8s-lab), a API possui **duas réplicas**, ambas servindo a Web UI e compartilhando o mesmo PostgreSQL. O worker tem uma réplica. A infraestrutura, o monitoramento e o fluxo de deploy com Argo CD estão documentados no repositório do lab.
 
-Para direcionar a coleta, use buscas separadas com termos como `estágio suporte remoto`, `Python remote` ou `internship`, e localização `Brazil` para ampliar a cobertura de vagas remotas. Esses termos são pistas de busca, não filtros garantidos. Regras do perfil e instruções da IA podem refinar as recomendações; dados ausentes exigem confirmação. O tipo `fulltime` do JobSpy descreve jornada, não comprova contratação CLT; CLT/PJ precisam de evidência no anúncio.
+## Execução local
 
-## Configurando a auditoria por IA
+Requer Git e Docker com Compose. As configurações disponíveis estão em [`.env.example`](.env.example).
 
 ```bash
-# 1. chave que cifra as API keys no banco (coloque no .env como FERNET_KEY)
-docker compose run --rm api chave-fernet
-
-# 2. providers, em ordem de prioridade. --api-key-env lê a variável do ambiente ou do .env
-#    (a chave não fica no histórico do shell); sem ele, a chave é pedida no terminal
-job-radar provider adicionar groq --preset groq --api-key-env GROQ_API_KEY
-job-radar provider adicionar nvidia --preset nvidia --api-key-env NVIDIA_API_KEY
-job-radar provider adicionar gemini --preset gemini --api-key-env GEMINI_API_KEY
-job-radar provider adicionar codex-luna --preset codex # Codex CLI com gpt-6-luna, só para o admin
-
-job-radar provider listar
-job-radar provider testar groq
-
-# 3. currículo usado para comparar requisitos
-job-radar perfil curriculo curriculo.md
+git clone https://github.com/paulocerqr/job-radar.git
+cd job-radar
+cp .env.example .env
 ```
 
-Os presets trazem modelo e limites iniciais. Modelos são aposentados com frequência: se o `testar` falhar com 404/410, liste os disponíveis com `job-radar provider modelos <nome>` e troque com `job-radar provider editar <nome> --modelo ...`. O worker audita um lote por usuário a cada minuto; `job-radar auditar` roda uma rodada na hora.
+Edite o `.env`: defina `POSTGRES_PASSWORD`, atualize a mesma senha em `DATABASE_URL` e configure `ADMIN_EMAIL`, `ADMIN_NOME` e `ADMIN_SENHA`. As credenciais públicas de demonstração não são criadas automaticamente no ambiente local.
 
-O preset `codex` usa `gpt-6-luna` pelo Codex CLI 0.165.0, incluído na imagem Docker. Cada auditoria roda em uma pasta temporária, em modo somente leitura e sem shell, web, plugins ou agentes auxiliares. A configuração pessoal e as instruções de arquivos AGENTS.md não são carregadas; os logs locais daquela chamada ficam na pasta temporária e são removidos ao final. O login do ChatGPT continua sendo reutilizado pelo CLI. O modelo vai pelo marcador `{modelo}` do comando, portanto `provider editar codex-luna --modelo ...` também muda o modelo realmente executado quando o comando contém esse marcador. Providers antigos não têm seu comando atualizado automaticamente.
-
-No host, autentique com `codex login` e use `job-radar provider testar codex-luna`. No lab, o worker possui `CODEX_HOME` em um PVC exclusivo, que permite ao CLI renovar o login sem colocar tokens na imagem, no Git ou nos manifests:
+Gere a chave que cifra as credenciais de IA e também pode ser usada para derivar a chave de sessão:
 
 ```bash
-kubectl -n job-radar exec -it deploy/worker -- sh -c 'umask 077; mkdir -p "$CODEX_HOME"; exec codex login --device-auth'
-kubectl -n job-radar exec deploy/worker -- job-radar provider testar codex-luna
+docker compose build
+docker compose run --rm --no-deps api chave-fernet
 ```
 
-O login exige concluir a autenticação no navegador e a opção de device code habilitada na conta. O cadastro desse provider é feito pelo terminal do worker autenticado; as réplicas da API não recebem essa sessão. O botão **Testar conexão** solicita o teste ao worker e acompanha o resultado: ele executa antes da próxima rodada de auditoria, sem disputar memória com outra chamada do CLI. Normalmente começa em até um minuto, mas aguarda uma auditoria em andamento; após 15 minutos sem conclusão, a interface permite tentar novamente. Providers CLI continuam exclusivos do admin e não são usados como fallback dos convidados. O worker precisa de memória para o processo do CLI além da sua própria; o lab reserva limite de 512 MiB após medir aproximadamente 300 MiB no CLI isolado. O volume usa `pd-balanced` com retenção: removê-lo exige cuidar também do disco, e perder o cache exige novo login.
-
-O CLI envia os dados da auditoria à OpenAI: usar login do ChatGPT não transforma a análise em processamento offline. As cotas do login se aplicam; os demais providers continuam disponíveis na cascata se o Codex falhar.
-
-## Notificações pelo Telegram
+Copie a chave gerada para `FERNET_KEY` no `.env` antes de iniciar os serviços. Para HTTP local, mantenha `SESSAO_COOKIE_SEGURO=false`.
 
 ```bash
-# 1. crie um bot no @BotFather e coloque o token no .env como TELEGRAM_BOT_TOKEN
-# 2. gere o link de vínculo (uso único) e abra no Telegram
-job-radar telegram vincular
-# 3. com o worker rodando, toque em "Iniciar" no chat do bot
-job-radar worker
-job-radar telegram status
+docker compose up -d
+docker compose run --rm api seed
+
+curl http://localhost:8000/healthz
+curl http://localhost:8000/readyz
 ```
 
-Cada vaga recomendada chega com os botões **✅ Vou aplicar**, **❌ Ignorar** (com motivo opcional) e **🔗 Abrir vaga**. O worker também avisa quando as recomendadas passam de 80% do limite e envia um resumo às 20:30. O bot responde a `/status`.
+Abra **[localhost:8000](http://localhost:8000)** e entre com o administrador definido no `.env`. O Compose inicia PostgreSQL, migrations, API e um worker; o `seed` cadastra as fontes e o administrador de forma idempotente.
 
-O bot usa long polling: não precisa de URL pública nem de porta aberta. Só um processo pode fazer polling por bot, o que casa com o worker de réplica única. Use um bot só para o Job Radar, não o de outro projeto.
+Para obter recomendações personalizadas, preencha **Meu perfil** com currículo e critérios e configure ao menos um provider de IA. O token do Telegram é opcional: sem ele, as notificações ficam desligadas. Consulte o [guia de operação](docs/OPERACAO.md) para cadastrar providers, vincular o Telegram e executar coletas.
 
-## Desenvolvimento
+## Documentação
 
-Requer [uv](https://docs.astral.sh/uv/) e Docker.
+| Guia | Conteúdo |
+|---|---|
+| [Operação e configuração](docs/OPERACAO.md) | CLI, providers de IA, currículo, Telegram e particularidades do LinkedIn |
+| [Desenvolvimento](docs/DESENVOLVIMENTO.md) | Ambiente Python, testes, migrations e frontend |
+| [CI/CD](docs/CI-CD.md) | GitHub Actions, publicação no GHCR e fluxo de PR |
+| [Deploy Kubernetes](docs/K8S-LAB.md) | Referência para a infraestrutura do lab |
+| [Plano do projeto](docs/PLANO.md) | Requisitos, regras de negócio, modelo de dados e decisões |
 
-```bash
-uv sync
-uv run ruff check && uv run ruff format --check
+## Limitações atuais
 
-# testes de integração precisam de um Postgres:
-docker compose up -d postgres
-TEST_DATABASE_URL=postgresql+psycopg://jobradar:<senha>@localhost:5432/jobradar uv run pytest
-```
-
-> Os testes de integração fazem `downgrade base` no banco apontado por `TEST_DATABASE_URL`, ou seja, apagam tudo. Use um banco descartável.
-
-Nova migration (depois de alterar os models):
-
-```bash
-DATABASE_URL=postgresql+psycopg://... uv run alembic revision --autogenerate -m "descricao"
-```
-
-### Frontend
-
-Next.js em `frontend/`, exportado como arquivos estáticos que a própria API serve (Node só no build; na imagem, o estágio `frontend` do Dockerfile). Requer Node 24 e pnpm.
-
-```bash
-cd frontend && pnpm install
-pnpm dev                      # http://localhost:3000, com recarga automática
-pnpm typecheck && pnpm build  # gera frontend/out
-FRONTEND_DIR=$PWD/out uv run job-radar api   # a API serve o build em http://localhost:8000
-```
-
-Com `pnpm dev`, as chamadas a `/api` são repassadas para a API em `127.0.0.1:8000`. Servindo o build pela API, reinicie a API depois de cada `pnpm build`: a CSP lista o hash dos scripts inline, calculado na inicialização.
-
-O frontend segue o visual Quayside do protótipo do Google Stitch, adaptado aos dados reais:
-
-- Visão geral e triagem: contagens atuais, funil, recomendações, decisões e saúde das últimas coletas.
-- Perfil: quantidade de palavras, níveis e critérios editados; simulação e vínculo do Telegram existentes.
-- Providers: prioridade, requisições, tokens e erros; fontes: coletas e histórico; usuários: acesso e convites.
-
-Os totais de fontes se referem às últimas 30 execuções; os de convites, aos últimos 50 registros. O protótipo também sugere séries históricas, custos em dinheiro, latência média, previsões de próxima coleta, ações em lote e configurações globais: esses recursos não foram incluídos porque não têm suporte nos endpoints atuais. Os gráficos e números ilustrativos do Stitch não são usados como dados da aplicação.
-
-## CI
-
-`.github/workflows/ci.yml`: lint e testes (com Postgres) em todo push e PR. Em push na `main`, publica `ghcr.io/paulocerqr/job-radar` com as tags `<sha>` e `latest`.
+- As fontes podem limitar requisições ou retornar anúncios incompletos. A integração experimental com o LinkedIn tem restrições documentadas no [guia de operação](docs/OPERACAO.md#linkedin-via-jobspy-experimental).
+- Pareceres da IA auxiliam a triagem; confirme os requisitos e as condições no anúncio original.
+- O Telegram usa long polling: mantenha apenas um processo fazendo polling por bot.
+- O cadastro de usuários ocorre por convite. A conta pública acima permite avaliar o sistema sem criar uma conta.
