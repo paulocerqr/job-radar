@@ -1,0 +1,26 @@
+[
+  {
+    "site": "indeed",
+    "id": "in-abc123",
+    "job_url": "https://br.indeed.com/viewjob?jk=abc123&from=tracking",
+    "title": "Estágio em Python",
+    "company": "Empresa de Teste",
+    "description": "Estágio remoto em Python e SQL para estudantes de tecnologia.",
+    "location": "Brasília, DF, Brazil",
+    "date_posted": "2026-11-01",
+    "is_remote": true,
+    "job_type": "parttime, internship"
+  },
+  {
+    "site": "glassdoor",
+    "id": "gd-100200300",
+    "job_url": "https://www.glassdoor.com.br/job-listing/j?jl=100200300&src=tracking",
+    "title": "Estágio em Python",
+    "company": "Empresa de Teste",
+    "description": "Estágio remoto em Python e SQL para estudantes de tecnologia.",
+    "location": "Brasília, DF, Brazil",
+    "date_posted": "2026-11-01",
+    "is_remote": true,
+    "job_type": "parttime, internship"
+  }
+]

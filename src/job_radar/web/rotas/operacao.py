@@ -22,7 +22,7 @@ from job_radar.auditoria.providers.base import ErroProvider, RespostaInvalida, e
 from job_radar.auditoria.testes_cli import resultado_teste
 from job_radar.coleta.base import fontes_registradas
 from job_radar.coleta.execucao import executar_coleta
-from job_radar.coleta.fontes.jobspy import ConfigJobSpy
+from job_radar.coleta.fontes.jobspy import validar_config
 from job_radar.db import nova_sessao
 from job_radar.models import ExecucaoColeta, Fonte, ProviderIA, UsoProvider, Usuario
 from job_radar.models.enums import Papel, StatusExecucao, TipoProvider
@@ -128,21 +128,27 @@ def alterar_fonte(
 class EditarBuscasJobSpy(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    config: ConfigJobSpy
+    config: dict[str, Any]
     max_itens: int = Field(ge=1, le=50, strict=True)
 
 
-@router.put("/fontes/jobspy/buscas", dependencies=ComCsrf)
+@router.put("/fontes/{fonte_id}/buscas", dependencies=ComCsrf)
 def editar_buscas_jobspy(
-    corpo: Annotated[dict[str, Any], Body()], usuario: UsuarioLogado, sessao: SessaoDB
+    fonte_id: str,
+    corpo: Annotated[dict[str, Any], Body()],
+    usuario: UsuarioLogado,
+    sessao: SessaoDB,
 ) -> JSONResponse:
     if negado := _so_admin(usuario):
         return negado
-    fonte = sessao.get(Fonte, "jobspy")
+    if fonte_id not in {"jobspy", "indeed", "glassdoor"}:
+        return JSONResponse({"erro": "fonte não encontrada"}, 404)
+    fonte = sessao.get(Fonte, fonte_id)
     if fonte is None:
         return JSONResponse({"erro": "fonte não encontrada"}, 404)
     try:
         dados = EditarBuscasJobSpy.model_validate(corpo)
+        config = validar_config(fonte_id, dados.config)
     except ValidationError:
         return JSONResponse(
             {"erro": "Configuração inválida. Confira os campos e limites informados."}, 422
@@ -151,10 +157,10 @@ def editar_buscas_jobspy(
         return JSONResponse(
             {"erro": "Aguarde a coleta em andamento terminar para editar as buscas."}, 409
         )
-    fonte.config = dados.config.model_dump()
+    fonte.config = config.model_dump()
     fonte.max_itens_execucao = dados.max_itens
     sessao.commit()
-    log.info("buscas do LinkedIn alteradas", extra={"fonte": fonte.id})
+    log.info("buscas do JobSpy alteradas", extra={"fonte": fonte.id})
     return JSONResponse({"config": fonte.config, "max_itens": fonte.max_itens_execucao})
 
 
