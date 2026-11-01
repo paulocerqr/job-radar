@@ -33,6 +33,8 @@ function parametros(config: Record<string, unknown>): string[] {
   for (const filtro of (config.filtros ?? config.buscas ?? []) as Record<string, string>[]) {
     itens.push(Object.entries(filtro).map(([k, v]) => `${k}=${v}`).join(' · '))
   }
+  if (config.somente_remoto) itens.push('somente remoto')
+  if (config.tipo_contrato) itens.push(`contrato: ${config.tipo_contrato}`)
   if (typeof config.repositorio === 'string') itens.push(`repositório: ${config.repositorio}`)
   return itens
 }
@@ -40,7 +42,7 @@ function parametros(config: Record<string, unknown>): string[] {
 function Fontes() {
   const [dados, setDados] = useState<Dados | null>(null)
   const [toast, setToast] = useState('')
-  const [editando, setEditando] = useState(false)
+  const [editando, setEditando] = useState<string | null>(null)
 
   const carregar = useCallback(() => api<Dados>('/fontes').then(setDados), [])
   useEffect(() => { carregar() }, [carregar])
@@ -92,7 +94,7 @@ function Fontes() {
       </section>
       <div className="cartoes-fonte">
         {dados.fontes.map((f) => (
-          <section className={`panel fonte ${f.ativa ? '' : 'fonte-off'} ${f.id === 'jobspy' && editando ? 'fonte-editando' : ''}`} key={f.id}>
+          <section className={`panel fonte ${f.ativa ? '' : 'fonte-off'} ${editando === f.id ? 'fonte-editando' : ''}`} key={f.id}>
             <div className="fonte-topo">
               <div className="source-badge gupy">{f.nome.slice(0, 1)}</div>
               <div className="fonte-nome"><strong>{f.nome}</strong><small>{f.implementada ? `a cada ${f.intervalo_min} min · até ${f.max_itens} vagas` : 'coletor ainda não implementado'}</small></div>
@@ -116,13 +118,13 @@ function Fontes() {
             {f.ultima?.erro && <p className="fonte-erro">{f.ultima.erro.slice(0, 240)}</p>}
             {f.implementada && dados.pode_alterar && (
               <div className="acoes-linha">
-                <button className="outline-button" disabled={!f.ativa || f.ultima?.status === 'rodando' || (f.id === 'jobspy' && editando)} onClick={() => coletar(f)}>
+                <button className="outline-button" disabled={!f.ativa || f.ultima?.status === 'rodando' || (editando === f.id)} onClick={() => coletar(f)}>
                   <Play size={14} /> {f.ultima?.status === 'rodando' ? 'Coletando…' : 'Coletar agora'}
                 </button>
-                {f.id === 'jobspy' && !editando && <button className="outline-button" disabled={f.ultima?.status === 'rodando'} onClick={() => setEditando(true)}><Pencil size={14} /> Editar buscas</button>}
+                {['jobspy', 'indeed', 'glassdoor'].includes(f.id) && !editando && <button className="outline-button" disabled={f.ultima?.status === 'rodando'} onClick={() => setEditando(f.id)}><Pencil size={14} /> Editar buscas</button>}
               </div>
             )}
-            {f.id === 'jobspy' && editando && dados.pode_alterar && <FormBuscasJobSpy inicial={f.config as ConfigBuscasJobSpy} limite={f.max_itens} aoCancelar={() => setEditando(false)} aoSalvar={() => { setEditando(false); avisar('Buscas salvas para as próximas coletas.'); carregar() }} />}
+            {editando === f.id && dados.pode_alterar && <FormBuscasJobSpy fonteId={f.id} nome={f.nome} inicial={f.config as ConfigBuscasJobSpy} limite={f.max_itens} aoCancelar={() => setEditando(null)} aoSalvar={() => { setEditando(null); avisar('Buscas salvas para as próximas coletas.'); carregar() }} />}
           </section>
         ))}
       </div>

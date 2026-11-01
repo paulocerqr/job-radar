@@ -23,7 +23,7 @@ A conta é compartilhada entre visitantes; alterações podem aparecer para outr
 
 ## Funcionalidades
 
-- **Coleta de vagas:** Gupy, Solides e GitHub; LinkedIn via JobSpy em caráter experimental, desativado por padrão.
+- **Coleta de vagas:** Gupy, Solides e GitHub; LinkedIn, Indeed e Glassdoor via JobSpy em caráter experimental, desativados por padrão.
 - **Seleção por perfil:** pré-filtro, fila de análise e auditoria por IA comparando vaga, currículo e critérios do usuário.
 - **Providers de IA:** Groq, NVIDIA e Gemini, com prioridades e fallback; integração com Codex CLI exclusiva do administrador.
 - **Interface web:** visão geral, vagas e pareceres, decisões, perfil, providers, fontes e histórico de coleta. Administração de usuários por convite.
@@ -104,3 +104,13 @@ Para obter recomendações personalizadas, preencha **Meu perfil** com currícul
 - Pareceres da IA auxiliam a triagem; confirme os requisitos e as condições no anúncio original.
 - O Telegram usa long polling: mantenha apenas um processo fazendo polling por bot.
 - O cadastro de usuários ocorre por convite. A conta pública acima permite avaliar o sistema sem criar uma conta.
+
+## Indeed e Glassdoor via JobSpy
+
+Execute `job-radar seed` para cadastrar as fontes `indeed` e `glassdoor`; o seed preserva as configurações existentes. As novas fontes começam desativadas, com limite de 20 vagas, recência de 72 horas e busca de estágio em Brasília. Em **Fontes e coletas**, o administrador pode editar buscas, ativar cada fonte e usar **Coletar agora**.
+
+As buscas são feitas no Brasil, sem login ou cookies pessoais. Os filtros opcionais **Somente remoto** e **Tipo de contrato** usam a classificação do portal; tempo integral ou contrato não significam necessariamente CLT ou PJ. As descrições e os pós-filtros do sistema continuam necessários. No Glassdoor, use localizações simples como `Brasília` ou `Brazil`; a recência é arredondada para dias inteiros. Os filtros não são repassados ao LinkedIn, cuja integração pública tem restrições próprias.
+
+A coleta reutiliza normalização, deduplicação e distribuição por perfil. Cada portal tem IDs e URLs validados separadamente; erros reportados pelo JobSpy falham a coleta, sem repetição imediata. Não são adicionadas dependências nem migrations.
+
+No Kubernetes, os manifests do `k8s-lab` preparam `coletar-indeed` para 08:15, 12:15, 16:15 e 20:15 e `coletar-glassdoor` para 08:30, 12:30, 16:30 e 20:30, no fuso de Brasília. Os CronJobs respeitam a ativação da fonte no banco. No ambiente local com coleta no worker, reinicie o worker depois de ativar uma fonte para registrar seu agendamento.

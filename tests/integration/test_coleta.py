@@ -155,3 +155,25 @@ def test_falha_jobspy_nao_bloqueia_outras_fontes(banco_com_seed, monkeypatch):
         sessao.commit()
         outra = executar_coleta(sessao, "gupy", http=cliente_gupy(), agora=AGORA)
         assert outra.status == StatusExecucao.OK and outra.itens_novos == 5
+
+
+def test_portais_persistem_e_deduplicam_entre_fontes(banco_com_seed, monkeypatch):
+    import pandas as pd
+
+    itens = json.loads((FIXTURES / "jobspy_portais.json").read_text())
+    monkeypatch.setattr(
+        "jobspy.scrape_jobs",
+        lambda **kw: pd.DataFrame([i for i in itens if i["site"] == kw["site_name"][0]]),
+    )
+    with nova_sessao() as sessao:
+        for site in ["indeed", "glassdoor"]:
+            fonte = sessao.get(Fonte, site)
+            assert not fonte.ativa
+            primeira = executar_coleta(sessao, site, agora=AGORA)
+            assert primeira.status == StatusExecucao.OK
+            assert primeira.itens_coletados == 1
+            assert primeira.itens_novos == (1 if site == "indeed" else 0)
+            segunda = executar_coleta(sessao, site, agora=AGORA)
+            assert segunda.itens_duplicados == 1 and segunda.itens_novos == 0
+        assert contar(sessao, Vaga) == 1
+        assert contar(sessao, VagaFonte) == 2

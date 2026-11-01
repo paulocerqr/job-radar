@@ -7,17 +7,21 @@ import { api } from '@/lib/api'
 export type ConfigBuscasJobSpy = {
   buscas: { termo: string; local: string }[]
   horas?: number
+  somente_remoto?: boolean
+  tipo_contrato?: string | null
   pausa_s?: number
 }
 
-export function FormBuscasJobSpy({ inicial, limite, aoSalvar, aoCancelar }: {
-  inicial: ConfigBuscasJobSpy; limite: number
+export function FormBuscasJobSpy({ inicial, limite, fonteId, nome, aoSalvar, aoCancelar }: {
+  inicial: ConfigBuscasJobSpy; limite: number; fonteId: string; nome: string
   aoSalvar: () => void; aoCancelar: () => void
 }) {
   const [buscas, setBuscas] = useState(inicial.buscas)
   const [horas, setHoras] = useState(inicial.horas ?? 72)
   const [pausa, setPausa] = useState(inicial.pausa_s ?? 5)
   const [maxItens, setMaxItens] = useState(limite)
+  const [remoto, setRemoto] = useState(inicial.somente_remoto ?? false)
+  const [contrato, setContrato] = useState(inicial.tipo_contrato ?? '')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -34,9 +38,9 @@ export function FormBuscasJobSpy({ inicial, limite, aoSalvar, aoCancelar }: {
     }
     setSalvando(true)
     try {
-      await api('/fontes/jobspy/buscas', {
+      await api(`/fontes/${fonteId}/buscas`, {
         metodo: 'PUT',
-        corpo: { config: { buscas, horas, pausa_s: pausa }, max_itens: maxItens },
+        corpo: { config: { buscas, horas, pausa_s: pausa, ...(fonteId !== 'jobspy' ? { somente_remoto: remoto, tipo_contrato: contrato || null } : {}) }, max_itens: maxItens },
       })
       aoSalvar()
     } catch (e) {
@@ -45,8 +49,8 @@ export function FormBuscasJobSpy({ inicial, limite, aoSalvar, aoCancelar }: {
   }
 
   return (
-    <form className="form-buscas" aria-label="Editar buscas do LinkedIn" onSubmit={salvar}>
-      <h3>Buscas do LinkedIn</h3>
+    <form className="form-buscas" aria-label={`Editar buscas de ${nome}`} onSubmit={salvar}>
+      <h3>Buscas de {nome}</h3>
       <p className="dica">As alterações valem para as próximas coletas. As buscas seguem a ordem abaixo até atingir o limite total. Para direcionar a busca, experimente termos como “estágio suporte remoto” e localização “Brazil”. A modalidade ainda precisa ser confirmada na vaga.</p>
       <fieldset className="buscas-campos" disabled={salvando}>
         {buscas.map((busca, i) => (
@@ -57,13 +61,24 @@ export function FormBuscasJobSpy({ inicial, limite, aoSalvar, aoCancelar }: {
                 <input value={busca.termo} onChange={(e) => mudar(i, 'termo', e.target.value)} maxLength={200} required />
               </label>
               <label className="campo">Localização
-                <input value={busca.local} onChange={(e) => mudar(i, 'local', e.target.value)} maxLength={200} required placeholder="Ex.: Brasília, Distrito Federal, Brazil" />
+                <input value={busca.local} onChange={(e) => mudar(i, 'local', e.target.value)} maxLength={200} required placeholder={fonteId === 'jobspy' ? 'Ex.: Brasília, Distrito Federal, Brazil' : 'Ex.: Brasília ou Brazil'} />
               </label>
             </div>
             <button type="button" className="outline-button" disabled={buscas.length === 1} onClick={() => setBuscas(buscas.filter((_, indice) => indice !== i))}><Trash2 size={14} /> Remover busca {i + 1}</button>
           </fieldset>
         ))}
         <button type="button" className="outline-button" disabled={buscas.length >= 5} onClick={() => setBuscas([...buscas, { termo: '', local: 'Brazil' }])}><Plus size={14} /> Adicionar busca ({buscas.length}/5)</button>
+        {fonteId !== 'jobspy' && <>
+          <label className="campo"><span><input type="checkbox" checked={remoto} onChange={(e) => setRemoto(e.target.checked)} /> Somente remoto</span></label>
+          <label className="campo">Tipo de contrato
+            <select value={contrato} onChange={(e) => setContrato(e.target.value)}>
+              <option value="">Todos</option><option value="internship">Estágio</option>
+              <option value="fulltime">Tempo integral</option><option value="parttime">Meio período</option>
+              <option value="contract">Contrato</option><option value="temporary">Temporário</option>
+            </select>
+          </label>
+          <p className="dica">Os filtros usam a classificação do portal e não equivalem a CLT/PJ. Confirme os requisitos na descrição.{fonteId === 'glassdoor' ? ' Use cidades como “Brasília”; a recência é arredondada para dias inteiros.' : ''}</p>
+        </>}
         <div className="grade-3">
           <label className="campo">Publicadas nas últimas (horas)
             <input type="number" min={1} max={720} step={1} required value={horas} onChange={(e) => setHoras(Number(e.target.value))} />

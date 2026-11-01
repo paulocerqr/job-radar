@@ -243,3 +243,37 @@ def test_editar_buscas_sem_fonte(admin):
         sessao.delete(sessao.get(Fonte, "jobspy"))
         sessao.commit()
     assert admin.put("/api/fontes/jobspy/buscas", json=BUSCAS_LINKEDIN).status_code == 404
+
+
+@pytest.mark.parametrize("site", ["indeed", "glassdoor"])
+def test_edita_buscas_dos_portais(admin, site):
+    with nova_sessao() as sessao:
+        sessao.add(
+            Usuario(
+                email="comum@x.y",
+                nome="Comum",
+                papel=Papel.USUARIO,
+                senha_hash=gerar_hash_senha("senha-comum"),
+            )
+        )
+        sessao.commit()
+    comum = _entrar("comum@x.y", "senha-comum")
+    corpo = {
+        "config": {
+            "buscas": [{"termo": "tecnologia", "local": "Brazil"}],
+            "somente_remoto": True,
+            "tipo_contrato": "internship",
+        },
+        "max_itens": 10,
+    }
+    assert comum.put(f"/api/fontes/{site}/buscas", json=corpo).status_code == 403
+    r = admin.put(f"/api/fontes/{site}/buscas", json=corpo)
+    assert r.status_code == 200
+    assert r.json()["config"]["somente_remoto"] is True
+    with nova_sessao() as sessao:
+        fonte = sessao.get(Fonte, site)
+        assert not fonte.ativa and fonte.max_itens_execucao == 10
+        assert fonte.config["tipo_contrato"] == "internship"
+    corpo["config"]["tipo_contrato"] = "CLT"
+    assert admin.put(f"/api/fontes/{site}/buscas", json=corpo).status_code == 422
+    assert admin.put("/api/fontes/gupy/buscas", json=corpo).status_code == 404

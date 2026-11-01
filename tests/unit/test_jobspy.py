@@ -181,3 +181,80 @@ def test_mapeia_serializacao_real_do_jobspy(coletor, monkeypatch):
     assert vaga.cidade == "Brasília" and vaga.uf == "DF"
     assert vaga.nivel == Nivel.ESTAGIO
     assert vaga.publicada_em == datetime(2026, 10, 27, tzinfo=UTC)
+
+
+@pytest.mark.parametrize("site", ["indeed", "glassdoor"])
+def test_portais_mapeiam_ids_filtros_e_ausencias(site, monkeypatch):
+    from job_radar.coleta.fontes.jobspy import CONFIG_PORTAIS
+
+    itens = json.loads((FIXTURE.parent / "jobspy_portais.json").read_text())
+    item = next(i for i in itens if i["site"] == site)
+    quadro = pd.DataFrame([item, item])
+    scrape = Mock(return_value=quadro)
+    monkeypatch.setattr("jobspy.scrape_jobs", scrape)
+    config = {**CONFIG_PORTAIS[site], "somente_remoto": True}
+    with httpx.Client() as http:
+        vagas = obter_coletor(site, http).buscar(config, 5)
+    assert len(vagas) == 1
+    vaga = normalizar(vagas[0])
+    assert vaga.fonte_id == site
+    assert vaga.id_externo == ("abc123" if site == "indeed" else "100200300")
+    assert vaga.nivel == Nivel.ESTAGIO and vaga.modalidade == Modalidade.REMOTO
+    assert vaga.cidade == "Brasília" and vaga.uf == "DF"
+    assert "tracking" not in vaga.url
+    assert scrape.call_args.kwargs["country_indeed"] == "brazil"
+    assert scrape.call_args.kwargs["job_type"] == "internship"
+    assert scrape.call_args.kwargs["is_remote"] is True
+    assert scrape.call_args.kwargs["site_name"] == [site]
+    desconhecida = mapear(
+        {
+            **item,
+            "location": "Remoto, Brazil",
+            "is_remote": None,
+            "description": None,
+            "date_posted": None,
+        },
+        site,
+    )
+    assert desconhecida.cidade is None and desconhecida.uf is None
+    assert desconhecida.modalidade == Modalidade.DESCONHECIDA
+    assert desconhecida.descricao is None and desconhecida.publicada_em is None
+
+
+@pytest.mark.parametrize(
+    "site,url",
+    [
+        ("indeed", "https://br.indeed.com.evil.test/viewjob?jk=abc"),
+        ("indeed", "https://br.indeed.com/viewjob?jk="),
+        ("indeed", "https://user:password@br.indeed.com/viewjob?jk=abc"),
+        ("glassdoor", "https://www.glassdoor.com.br.evil.test/job-listing/j?jl=123"),
+        ("glassdoor", "https://www.glassdoor.com.br/job-listing/j?jl=abc"),
+        ("glassdoor", "https://www.glassdoor.com.br:8080/job-listing/j?jl=123"),
+    ],
+)
+def test_portais_rejeitam_urls_fora_do_contrato(site, url):
+    with pytest.raises(ValueError):
+        mapear({"job_url": url, "title": "Estágio"}, site)
+
+
+@pytest.mark.parametrize("site", ["indeed", "glassdoor"])
+def test_portais_validam_antes_da_rede_e_reportam_bloqueio(site, monkeypatch):
+    from job_radar.coleta.fontes.jobspy import CONFIG_PORTAIS
+
+    quadro = pd.DataFrame()
+    quadro.attrs["errors"] = {site: "HTTP 403"}
+    scrape = Mock(return_value=quadro)
+    monkeypatch.setattr("jobspy.scrape_jobs", scrape)
+    with httpx.Client() as http:
+        coletor = obter_coletor(site, http)
+        for extra in [
+            {"tipo_contrato": "CLT"},
+            {"somente_remoto": "sim"},
+            {"country_indeed": "usa"},
+        ]:
+            with pytest.raises(ValidationError):
+                coletor.buscar({**CONFIG_PORTAIS[site], **extra}, 5)
+        scrape.assert_not_called()
+        with pytest.raises(RuntimeError, match="403"):
+            coletor.buscar(CONFIG_PORTAIS[site], 5)
+        scrape.assert_called_once()

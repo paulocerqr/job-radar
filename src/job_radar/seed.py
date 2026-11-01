@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from job_radar.coleta.fontes.gupy import FILTROS_PADRAO, TERMOS_PADRAO
 from job_radar.coleta.fontes.jobspy import CONFIG_PADRAO as CONFIG_JOBSPY
+from job_radar.coleta.fontes.jobspy import CONFIG_PORTAIS
 from job_radar.coleta.fontes.solides import BUSCAS_PADRAO as BUSCAS_SOLIDES
 from job_radar.config import Settings
 from job_radar.models import Fonte, Perfil, Usuario
@@ -58,6 +59,18 @@ FONTES_PADRAO = [
         "confiabilidade": 60,
         "config": CONFIG_JOBSPY,
     },
+    *[
+        {
+            "id": portal,
+            "nome": f"{portal.title()} (JobSpy) — experimental",
+            "ativa": False,
+            "intervalo_min": 240,
+            "max_itens_execucao": 20,
+            "confiabilidade": 60,
+            "config": config,
+        }
+        for portal, config in CONFIG_PORTAIS.items()
+    ],
     {
         "id": "greenhouse",
         "nome": "Greenhouse",

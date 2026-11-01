@@ -1,12 +1,12 @@
-"""LinkedIn público via JobSpy; sem contas, cookies pessoais ou outros portais."""
+"""LinkedIn, Indeed e Glassdoor via JobSpy, sem login ou cookies pessoais."""
 
 import json
 import logging
 import re
 import time
 from datetime import UTC, datetime
-from typing import Any
-from urllib.parse import urlsplit
+from typing import Any, Literal
+from urllib.parse import parse_qs, urlsplit
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
@@ -42,17 +42,70 @@ class ConfigJobSpy(BaseModel):
     pausa_s: float = Field(default=5, ge=0, le=60)
 
 
-def mapear(item: dict[str, Any]) -> VagaBruta:
+class ConfigPortaisJobSpy(ConfigJobSpy):
+    somente_remoto: bool = Field(default=False, strict=True)
+    tipo_contrato: Literal["internship", "fulltime", "parttime", "contract", "temporary"] | None = (
+        None
+    )
+
+
+CONFIG_PORTAIS = {
+    portal: {
+        "buscas": [{"termo": "estágio tecnologia", "local": "Brasília"}],
+        "horas": 72,
+        "pausa_s": 5,
+        "somente_remoto": False,
+        "tipo_contrato": "internship",
+    }
+    for portal in ("indeed", "glassdoor")
+}
+
+
+def validar_config(fonte_id: str, config: dict[str, Any]) -> ConfigJobSpy:
+    if fonte_id not in {"jobspy", "indeed", "glassdoor"}:
+        raise ValueError("Fonte JobSpy desconhecida")
+    modelo = ConfigJobSpy if fonte_id == "jobspy" else ConfigPortaisJobSpy
+    return modelo.model_validate(config)
+
+
+def mapear(item: dict[str, Any], fonte_id: str = "jobspy") -> VagaBruta:
     url = urlsplit(item["job_url"])
-    identificador = re.fullmatch(r"/jobs/view/(\d+)/?", url.path)
-    if url.scheme != "https" or url.hostname not in {"linkedin.com", "www.linkedin.com"}:
-        raise ValueError("URL de vaga fora do LinkedIn")
-    if not identificador or not item["title"].strip():
-        raise ValueError("Vaga do LinkedIn sem ID ou título válido")
+    if url.scheme != "https" or url.username or url.password or url.port not in {None, 443}:
+        raise ValueError("URL de vaga inválida")
+    if fonte_id == "jobspy":
+        identificador = re.fullmatch(r"/jobs/view/(\d+)/?", url.path)
+        if url.hostname not in {"linkedin.com", "www.linkedin.com"} or not identificador:
+            raise ValueError("URL de vaga fora do LinkedIn ou sem ID válido")
+        id_externo = identificador[1]
+        url_canonica = f"https://www.linkedin.com/jobs/view/{id_externo}"
+    elif fonte_id == "indeed":
+        id_externo = parse_qs(url.query).get("jk", [""])[0]
+        if (
+            url.hostname not in {"br.indeed.com", "www.indeed.com", "indeed.com"}
+            or url.path != "/viewjob"
+            or not re.fullmatch(r"[a-zA-Z0-9]+", id_externo)
+        ):
+            raise ValueError("URL de vaga fora do Indeed ou sem ID válido")
+        url_canonica = f"https://br.indeed.com/viewjob?jk={id_externo}"
+    elif fonte_id == "glassdoor":
+        id_externo = parse_qs(url.query).get("jl", [""])[0]
+        if (
+            url.hostname not in {"www.glassdoor.com.br", "glassdoor.com.br"}
+            or url.path != "/job-listing/j"
+            or not re.fullmatch(r"\d+", id_externo)
+        ):
+            raise ValueError("URL de vaga fora do Glassdoor ou sem ID válido")
+        url_canonica = f"https://www.glassdoor.com.br/job-listing/j?jl={id_externo}"
+    else:
+        raise ValueError("Fonte JobSpy desconhecida")
+    if not item["title"].strip():
+        raise ValueError("Vaga sem título válido")
 
     partes = [p.strip() for p in (item.get("location") or "").split(",") if p.strip()]
     cidade = (
-        partes[0] if partes and normalizar_chave(partes[0]) not in {"brazil", "brasil"} else None
+        partes[0]
+        if partes and normalizar_chave(partes[0]) not in {"brazil", "brasil", "remoto", "remote"}
+        else None
     )
     estado = partes[-2] if len(partes) >= 3 else None
     uf = "DF" if normalizar_chave(estado) == "federal district" else normalizar_uf(estado)
@@ -73,9 +126,9 @@ def mapear(item: dict[str, Any]) -> VagaBruta:
         publicada = publicada.replace(tzinfo=UTC) if publicada.tzinfo is None else publicada
 
     return VagaBruta(
-        fonte_id="jobspy",
-        id_externo=identificador[1],
-        url=f"https://www.linkedin.com/jobs/view/{identificador[1]}",
+        fonte_id=fonte_id,
+        id_externo=id_externo,
+        url=url_canonica,
         titulo=item["title"],
         empresa=item.get("company"),
         descricao=item.get("description"),
@@ -104,24 +157,34 @@ def mapear(item: dict[str, Any]) -> VagaBruta:
 
 @registrar("jobspy")
 class ColetorJobSpy:
+    fonte_id = "jobspy"
+    site = "linkedin"
+
     def __init__(self, http: httpx.Client) -> None:
         # JobSpy gerencia a própria sessão HTTP; mantemos o protocolo dos coletores.
         pass
 
     def buscar(self, config: dict[str, Any], limite: int) -> list[VagaBruta]:
-        opcoes = ConfigJobSpy.model_validate(config)
+        opcoes = validar_config(self.fonte_id, config)
         if not 1 <= limite <= 50:
             raise ValueError("JobSpy aceita limite de 1 a 50 vagas por execução")
 
         # Importação tardia: pandas/curl não devem pesar nas outras fontes ou no startup.
         from jobspy import scrape_jobs
 
+        filtros = {}
+        if isinstance(opcoes, ConfigPortaisJobSpy):
+            filtros = {
+                "country_indeed": "brazil",
+                "is_remote": opcoes.somente_remoto,
+                "job_type": opcoes.tipo_contrato,
+            }
         vagas: dict[str, VagaBruta] = {}
         for indice, busca in enumerate(opcoes.buscas):
             if indice:
                 time.sleep(opcoes.pausa_s)
             resultado = scrape_jobs(
-                site_name=["linkedin"],
+                site_name=[self.site],
                 search_term=busca.termo,
                 location=busca.local,
                 results_wanted=limite - len(vagas),
@@ -129,17 +192,30 @@ class ColetorJobSpy:
                 fetch_description=True,
                 description_format="plain",
                 verbose=1,
+                **filtros,
             )
             if avisos := resultado.attrs.get("warnings"):
                 log.warning("avisos do JobSpy", extra={"avisos": avisos})
             if erros := resultado.attrs.get("errors"):
-                raise RuntimeError(f"LinkedIn (JobSpy): {erros}")
+                raise RuntimeError(f"{self.site} (JobSpy): {erros}")
 
             # to_json converte NaN/NaT, tipos numpy e datas antes de persistir em JSONB.
             itens = json.loads(resultado.to_json(orient="records", date_format="iso"))
             for item in itens:
-                vaga = mapear(item)
+                vaga = mapear(item, self.fonte_id)
                 vagas.setdefault(vaga.id_externo, vaga)
                 if len(vagas) == limite:
                     return list(vagas.values())
         return list(vagas.values())
+
+
+@registrar("indeed")
+class ColetorIndeed(ColetorJobSpy):
+    fonte_id = "indeed"
+    site = "indeed"
+
+
+@registrar("glassdoor")
+class ColetorGlassdoor(ColetorJobSpy):
+    fonte_id = "glassdoor"
+    site = "glassdoor"
